@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"gorm.io/gorm"
 	"network-disk/dao"
 	"network-disk/middleware"
@@ -21,6 +22,7 @@ func Login(user model.User) (res bool, token string, err error) {
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			err = ErrOfNoAccount
+			fmt.Println(err)
 			return
 		}
 		err = errors.New("check password failed,err:" + err.Error())

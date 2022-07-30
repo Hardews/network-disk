@@ -32,7 +32,8 @@ func login(ctx *gin.Context) {
 		return
 	}
 	if err != nil {
-		tool.RespErrorWithDate(ctx, err)
+		tool.RespErrorWithDate(ctx, err.Error())
+		return
 	}
 
 	tool.RespSuccessfulWithDate(ctx, token)
@@ -52,12 +53,12 @@ func register(ctx *gin.Context) {
 
 	res, err := service.Register(user)
 	if !res {
-		tool.RespInternetError(ctx)
 		log.Println(err)
+		tool.RespInternetError(ctx)
 		return
 	}
 	if err != nil {
-		tool.RespErrorWithDate(ctx, err)
+		tool.RespErrorWithDate(ctx, err.Error())
 		return
 	}
 
