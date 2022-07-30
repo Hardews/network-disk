@@ -2,6 +2,8 @@ package service
 
 import (
 	"golang.org/x/crypto/bcrypt"
+	"math/rand"
+	"time"
 )
 
 func Encryption(password string) (error, string) {
@@ -24,5 +26,15 @@ func Interpretation(passwordInSql, passwordInput string) (error, bool) {
 	} else {
 		return err, true
 	}
+}
 
+var letterRunes = []rune("ABCDEFGHIJKLMNOPQRSTUVWSYZabcdefghijklmnopqrstuvwsyz1234567890")
+
+func RandomStr(n int) string {
+	rand.Seed(time.Now().UnixNano())
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }

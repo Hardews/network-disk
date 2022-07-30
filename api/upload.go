@@ -19,6 +19,19 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
+const basePath = "http://127.0.0.1:8080/"
+
+func encryptionShare(ctx *gin.Context) {
+	pwd := ctx.PostForm("password")
+	if pwd != "" {
+		pwd = service.RandomStr(4)
+		pwd = service.MD5([]byte(pwd))
+	}
+	filename := ctx.Param("filename")
+
+	tool.RespSuccessfulWithDate(ctx, basePath+"/encryption/"+filename+"_"+pwd)
+}
+
 func qrCode(ctx *gin.Context) {
 	filename := ctx.Param("filename")
 	iUsername, _ := ctx.Get("username")
@@ -38,11 +51,11 @@ func qrCode(ctx *gin.Context) {
 	var qr *qrcode.QRCode
 	switch ur.Permission {
 	case service.Public:
-		qr, err = qrcode.New("http://127.0.0.1:8080/"+username+"/"+filename, qrcode.Medium)
+		qr, err = qrcode.New(basePath+username+"/"+filename, qrcode.Medium)
 	case service.Private:
 		tool.RespErrorWithDate(ctx, "您设置了仅自己可见，无法分享")
 	case service.Permission:
-		str := "http://127.0.0.1:8080/download_conn/"
+		str := basePath + "download_conn/"
 		str += base64.URLEncoding.EncodeToString([]byte(filename + "-" + ur.ResourceName))
 		qr, err = qrcode.New(str, qrcode.Medium)
 	}
@@ -126,6 +139,33 @@ func updateFileAttribute(ctx *gin.Context) {
 	}
 
 	tool.RespSuccessful(ctx)
+}
+
+func downloadEncryptionFile(ctx *gin.Context) {
+	pwd := ctx.PostForm("password")
+	str := ctx.Param("filename")
+	iUsername, _ := ctx.Get("username")
+	username := iUsername.(string)
+
+	s := strings.Split(str, "_")
+
+	if service.MD5([]byte(s[1])) != pwd {
+		tool.RespErrorWithDate(ctx, "密码错误")
+		return
+	}
+
+	ur, err := service.GetUserResource(username, s[0])
+	if err != nil {
+		if err == redis.Nil {
+			tool.RespErrorWithDate(ctx, "没有该文件")
+			return
+		}
+		log.Println(err)
+		tool.RespInternetError(ctx)
+		return
+	}
+
+	downloadFile(ctx, ur.Filename, ur.ResourceName)
 }
 
 func downloadPublicFile(ctx *gin.Context) {
@@ -212,6 +252,7 @@ func shareFile(ctx *gin.Context) {
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
 	filename := ctx.Param("filename")
+	permission := ctx.Request.Header.Get("permission")
 
 	ur, err := service.GetUserResource(username, filename)
 	if err != nil {
@@ -226,15 +267,19 @@ func shareFile(ctx *gin.Context) {
 
 	var str string
 
+	if permission != "" {
+		ur.Permission = permission
+	}
+
 	switch ur.Permission {
 	case service.Public:
-		tool.RespSuccessfulWithDate(ctx, "http://127.0.0.1:8080/"+username+"/"+filename)
+		tool.RespSuccessfulWithDate(ctx, basePath+username+"/"+filename)
 	case service.Private:
 		tool.RespErrorWithDate(ctx, "分享失败，您以将该文件设置为仅自己可见")
 	case service.Permission:
 		// 使人们只能通过分享连接下载的想法是将url进行base64编码
 		str = base64.URLEncoding.EncodeToString([]byte(filename + "-" + ur.ResourceName))
-		tool.RespSuccessfulWithDate(ctx, "http://127.0.0.1:8080/download_conn/"+str)
+		tool.RespSuccessfulWithDate(ctx, basePath+"download_conn/"+str)
 	}
 }
 

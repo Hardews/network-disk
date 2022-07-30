@@ -148,7 +148,7 @@ func DealWithFile(file *multipart.FileHeader) (res bool, filename string, err er
 
 	//用md5生成唯一的文件指纹，返回保存到本地
 	res = true
-	filename = "./uploadFile/" + mD5(data) + fileSuffix
+	filename = "./uploadFile/" + MD5(data) + fileSuffix
 	return
 }
 
@@ -156,7 +156,7 @@ func IsRepeatFile(filename string) bool {
 	return filepath.IsAbs(filename)
 }
 
-func mD5(data []byte) string {
+func MD5(data []byte) string {
 	has := md5.Sum(data)
 	md5str := fmt.Sprintf("%x", has) //将[]byte转成16进制
 	return md5str
