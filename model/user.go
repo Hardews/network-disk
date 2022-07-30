@@ -7,6 +7,7 @@ type User struct {
 }
 
 type UserResources struct {
+	Folder       string
 	Filename     string
 	ResourceName string
 	Permission   string

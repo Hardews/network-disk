@@ -2,25 +2,130 @@ package api
 
 import (
 	"encoding/base64"
-	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis"
 	"io"
 	"log"
 	"net/http"
-	"network-disk/model"
-	"network-disk/service"
-	"network-disk/tool"
 	"os"
 	"strconv"
 	"strings"
+	"time"
+
+	"network-disk/model"
+	"network-disk/service"
+	"network-disk/tool"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
+	"github.com/skip2/go-qrcode"
 )
 
-func delFile(ctx *gin.Context) {
+func qrCode(ctx *gin.Context) {
+	filename := ctx.Param("filename")
+	iUsername, _ := ctx.Get("username")
+	username := iUsername.(string)
 
+	ur, err := service.GetUserResource(username, filename)
+	if err != nil {
+		if err == redis.Nil {
+			tool.RespErrorWithDate(ctx, "没有该文件")
+			return
+		}
+		log.Println(err)
+		tool.RespInternetError(ctx)
+		return
+	}
+
+	var qr *qrcode.QRCode
+	switch ur.Permission {
+	case service.Public:
+		qr, err = qrcode.New("http://127.0.0.1:8080/"+username+"/"+filename, qrcode.Medium)
+	case service.Private:
+		tool.RespErrorWithDate(ctx, "您设置了仅自己可见，无法分享")
+	case service.Permission:
+		str := "http://127.0.0.1:8080/download_conn/"
+		str += base64.URLEncoding.EncodeToString([]byte(filename + "-" + ur.ResourceName))
+		qr, err = qrcode.New(str, qrcode.Medium)
+	}
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	err = qr.Write(256, ctx.Writer)
+}
+
+func delFile(ctx *gin.Context) {
+	iUsername, _ := ctx.Get("username")
+	username := iUsername.(string)
+	filename := ctx.PostForm("filename")
+
+	ur, err := service.GetUserResource(username, filename)
+	if err != nil {
+		if err == redis.Nil {
+			tool.RespErrorWithDate(ctx, "没有该文件")
+			return
+		}
+		log.Println(err)
+		tool.RespInternetError(ctx)
+		return
+	}
+
+	err = service.DelFile(username, ur.Filename, ur.ResourceName)
+	if err != nil {
+		if err == redis.Nil {
+			tool.RespErrorWithDate(ctx, "您没有该文件")
+			return
+		}
+		log.Println(err)
+		tool.RespInternetError(ctx)
+		return
+	}
+
+	tool.RespSuccessful(ctx)
 }
 
 func updateFileAttribute(ctx *gin.Context) {
+	iUsername, _ := ctx.Get("username")
+	username := iUsername.(string)
+	filename := ctx.PostForm("filename")
+	c := ctx.PostForm("chose")
 
+	chose, err := strconv.Atoi(c)
+	if err != nil {
+		log.Println(err)
+		tool.RespInternetError(ctx)
+		return
+	}
+
+	newVal := ctx.PostForm("new")
+
+	ur, err := service.GetUserResource(username, filename)
+	if err != nil {
+		if err == redis.Nil {
+			tool.RespErrorWithDate(ctx, "没有该文件")
+			return
+		}
+		log.Println(err)
+		tool.RespInternetError(ctx)
+		return
+	}
+
+	res, err := service.UpdateFileAttribute(ur, newVal, username, chose)
+	if err != nil {
+		if err == service.ErrOfSameName {
+			tool.RespErrorWithDate(ctx, err.Error())
+			return
+		}
+		log.Println(err)
+		tool.RespInternetError(ctx)
+		return
+	}
+	if !res {
+		tool.RespErrorWithDate(ctx, "更新失败")
+		return
+	}
+
+	tool.RespSuccessful(ctx)
 }
 
 func downloadPublicFile(ctx *gin.Context) {
@@ -134,13 +239,17 @@ func shareFile(ctx *gin.Context) {
 }
 
 func uploadFile(ctx *gin.Context) {
-	var user model.User
 	iUsername, _ := ctx.Get("username")
-	user.Username = iUsername.(string)
+	username := iUsername.(string)
 
 	attribute := ctx.PostForm("attribute")
 	if attribute == "" {
 		attribute = service.Public
+	}
+
+	folder := ctx.PostForm("folder")
+	if folder == "" {
+		folder = "main folder"
 	}
 
 	file, err := ctx.FormFile("file")
@@ -174,14 +283,18 @@ func uploadFile(ctx *gin.Context) {
 		}
 	}
 
-	res, err = service.StorageFile(user.Username, file, filename)
+	var storage = model.UserResources{
+		Folder:       folder,
+		Filename:     file.Filename,
+		ResourceName: filename,
+		Permission:   attribute,
+		CreateAt:     time.Now().String(),
+	}
+
+	_, err = service.StorageFile(username, storage)
 	if err != nil {
 		log.Println("storage file failed,err:", err)
 		tool.RespInternetError(ctx)
-		return
-	}
-	if res {
-		tool.RespErrorWithDate(ctx, "上传失败,文件已存在")
 		return
 	}
 
