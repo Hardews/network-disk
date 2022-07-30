@@ -32,7 +32,7 @@ func Login(user model.User) (res bool, token string, err error) {
 		err = ErrOfWrongPassword
 		return
 	} else {
-		token, flag = middleware.SetToken(user.Username, user.Identity)
+		token, flag = middleware.SetToken(user.Username, "用户")
 		if !flag {
 			err = ErrOfInternet
 			return

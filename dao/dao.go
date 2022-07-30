@@ -1,13 +1,16 @@
 package dao
 
 import (
+	"github.com/go-redis/redis"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+
 	"log"
 )
 
 var (
-	dB *gorm.DB
+	dB  *gorm.DB
+	rdb *redis.Client
 )
 
 func InitDB() {
@@ -16,6 +19,15 @@ func InitDB() {
 	if err != nil {
 		log.Fatalln("failed to connect database")
 	}
-
 	dB = db
+
+	rdb = redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "lmh123", // no password set
+		DB:       0,        // use default DB
+	})
+	_, err = rdb.Ping().Result()
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
