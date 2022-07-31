@@ -24,7 +24,7 @@ func InitDB() {
 	rdb = redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "lmh123",
-		DB:       4,
+		DB:       10,
 	})
 	_, err = rdb.Ping().Result()
 	if err != nil {

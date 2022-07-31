@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/base64"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -34,10 +35,18 @@ func encryptionShare(ctx *gin.Context) {
 	}
 	pwd = service.MD5([]byte(pwd))
 	filename := ctx.Param("filename")
-	Path, _ := ctx.GetQuery("path")
+
+	storagePath, _ := ctx.GetQuery("path")
+	var Path, err = base64.URLEncoding.DecodeString(storagePath)
+	if err != nil {
+		log.Println("encoding path failed,err:", err)
+		tool.RespInternetError(ctx)
+		return
+	}
+
 	folder, _ := ctx.GetQuery("category")
 
-	str := pwd + "_" + filename + "_" + username + "_" + Path + "_" + folder
+	str := pwd + "_" + filename + "_" + username + "_" + string(Path) + "_" + folder
 	str = base64.URLEncoding.EncodeToString([]byte(str))
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -54,9 +63,10 @@ func qrCode(ctx *gin.Context) {
 	username := iUsername.(string)
 
 	folder, _ := ctx.GetQuery("category")
-	Path, _ := ctx.GetQuery("path")
+	storagePath, _ := ctx.GetQuery("path")
+	var Path, err = base64.URLEncoding.DecodeString(storagePath)
 
-	ur, err := service.GetUserResource(username, filename, Path, folder)
+	ur, err := service.GetUserResource(username, filename, string(Path), folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
@@ -70,7 +80,7 @@ func qrCode(ctx *gin.Context) {
 	var qr *qrcode.QRCode
 	switch ur.Permission {
 	case service.Public:
-		qr, err = qrcode.New(basePath+username+"/"+filename, qrcode.Medium)
+		qr, err = qrcode.New(basePath+username+"/"+filename+"?path="+storagePath+"&category="+folder, qrcode.Medium)
 	case service.Private:
 		tool.RespErrorWithDate(ctx, "您设置了仅自己可见，无法分享")
 	case service.Permission:
@@ -208,10 +218,12 @@ func downloadEncryptionFile(ctx *gin.Context) {
 func downloadPublicFile(ctx *gin.Context) {
 	username := ctx.Param("username")
 	filename := ctx.Param("filename")
-	Path, _ := ctx.GetQuery("path")
+
+	storagePath, _ := ctx.GetQuery("path")
+	var Path, err = base64.URLEncoding.DecodeString(storagePath)
 	folder, _ := ctx.GetQuery("category")
 
-	ur, err := service.GetUserResource(username, filename, Path, folder)
+	ur, err := service.GetUserResource(username, filename, string(Path), folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
@@ -252,13 +264,15 @@ func downloadUserFile(ctx *gin.Context) {
 	// 获取各种东西
 	filename := ctx.Param("filename")
 
-	Path, _ := ctx.GetQuery("path")
+	storagePath, _ := ctx.GetQuery("path")
+	var Path, err = base64.URLEncoding.DecodeString(storagePath)
+
 	folder, _ := ctx.GetQuery("category")
 
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
 
-	ur, err := service.GetUserResource(username, filename, Path, folder)
+	ur, err := service.GetUserResource(username, filename, string(Path), folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
@@ -308,12 +322,14 @@ func downloadFile(ctx *gin.Context, filename, resource string) {
 	for {
 		var n int
 		// 通过控制切片大小控制下载速度
-		tmp := make([]byte, 10)
+		tmp := make([]byte, 125*100) // 1 兆
 		n, err = file.Read(tmp)
 		if err == io.EOF {
 			return
 		}
+
 		ctx.Writer.Write(tmp[:n])
+		time.Sleep(1 * time.Millisecond)
 	}
 }
 
@@ -327,12 +343,13 @@ func shareFile(ctx *gin.Context) {
 	// 获取权限设置
 	permission := ctx.Request.Header.Get("permission")
 	// 获取路径
-	Path, _ := ctx.GetQuery("path")
+	storagePath, _ := ctx.GetQuery("path")
+	var Path, err = base64.URLEncoding.DecodeString(storagePath)
 	// 获取文件夹位置
 	folder, _ := ctx.GetQuery("category")
 
 	// 获取该用户想分享的资源的信息
-	ur, err := service.GetUserResource(username, filename, Path, folder)
+	ur, err := service.GetUserResource(username, filename, string(Path), folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
@@ -352,7 +369,7 @@ func shareFile(ctx *gin.Context) {
 
 	switch ur.Permission {
 	case service.Public:
-		tool.RespSuccessfulWithDate(ctx, basePath+username+"/"+filename)
+		tool.RespSuccessfulWithDate(ctx, basePath+username+"/"+filename+"?path="+storagePath+"&category="+folder)
 	case service.Private:
 		tool.RespErrorWithDate(ctx, "分享失败，您以将该文件设置为仅自己可见")
 	case service.Permission:
@@ -416,29 +433,45 @@ func uploadFile(ctx *gin.Context) {
 	// 重复: 只存一个对应的连接
 	// 不重复: 存在服务器
 
-	//var breakFile *os.File
-	if !service.IsRepeatFile(resourceName) {
-		//breakPointPath := "./uploadFile/breakPoint/" + username + filename
-		//if !filepath.IsAbs(breakPointPath) {
-		//	// 如果不存在断点文件则创建
-		//	breakFile, err = os.Create(breakPointPath)
-		//	if err != nil {
-		//		log.Println(err)
-		//		tool.RespErrorWithDate(ctx, "上传失败，请重试")
-		//		return
-		//	}
-		//}
+	var (
+		filename       = file.Filename
+		breakFile      *os.File
+		IsFileRepeat   = true
+		resourceInfo   fs.FileInfo
+		fileSuffix     = path.Ext(file.Filename)
+		breakPointPath = "./uploadFile/breakPoint/" + username + filename[:len(filename)-len(fileSuffix)] + ".txt"
+	)
 
-		// 存储
-		err = ctx.SaveUploadedFile(file, resourceName)
-		if err != nil {
-			log.Println("上传文件失败,err:", err)
-			tool.RespErrorWithDate(ctx, "服务器错误，上传文件失败")
+	resource, err := os.Open(resourceName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			IsFileRepeat = false
+			err = nil
+			goto storage
+		} else {
+			log.Println("open resource file failed,err:", err)
+			tool.RespErrorWithDate(ctx, "上传失败，请重试")
 			return
 		}
 	}
 
-	var filename = file.Filename
+	resourceInfo, err = resource.Stat()
+	if err != nil {
+		log.Println("get resource info failed,err:", err)
+		tool.RespErrorWithDate(ctx, "上传失败，请重试")
+		return
+	}
+
+storage:
+	// 如果有这个文件但是这个文件的大小与上传的不一致证明中断过
+	if !IsFileRepeat || resourceInfo.Size() != file.Size {
+		err = service.Storage(file, resourceName, breakPointPath, breakFile)
+		if err != nil {
+			log.Println(err)
+			tool.RespInternetError(ctx)
+			return
+		}
+	}
 
 	// 这里是判断用户上传的文件名是否与存在的文件名重复
 	// 如果重复，帮它改名字
@@ -454,6 +487,7 @@ func uploadFile(ctx *gin.Context) {
 		filename = file.Filename[:Len] + time.Now().Format("20060102_030405") + fileSuffix
 	}
 
+	var storagePath = base64.URLEncoding.EncodeToString([]byte(Path))
 	// 在redis中存储的结构
 	var storage = model.UserResources{
 		Folder:       folder,
@@ -461,7 +495,7 @@ func uploadFile(ctx *gin.Context) {
 		Filename:     filename,
 		ResourceName: resourceName,
 		Permission:   attribute,
-		DownloadAddr: basePath + "user/download/" + file.Filename,
+		DownloadAddr: basePath + "user/download/" + file.Filename + "?path=" + storagePath + "&category=" + folder,
 		CreateAt:     time.Now().String(),
 	}
 

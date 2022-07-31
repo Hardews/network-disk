@@ -4,10 +4,13 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"os"
 	"path"
-	"path/filepath"
+	"strconv"
 	"strings"
 
 	"network-disk/dao"
@@ -150,7 +153,7 @@ func GetUserResource(username, filename, path, folder string) (ur model.UserReso
 		Permission:   s[1],
 		CreateAt:     s[2],
 		Folder:       folder,
-		DownloadAddr: s[4],
+		DownloadAddr: s[3],
 		Path:         path,
 	}
 
@@ -171,6 +174,91 @@ func IsRepeatFilename(username, filename, folder, path string) (res bool, err er
 	return true, nil
 }
 
+func Storage(file *multipart.FileHeader, resourceName, breakPointPath string, breakFile *os.File) (err error) {
+	_, err = os.Stat(breakPointPath)
+	if !os.IsNotExist(err) {
+		// 如果不存在断点文件则创建
+		breakFile, err = os.Create(breakPointPath)
+		defer breakFile.Close()
+		if err != nil {
+			err = errors.New("create break point file failed,err:" + err.Error())
+			return
+		}
+	}
+
+	// 读取断点位置
+	breakFile, err = os.OpenFile(breakPointPath, os.O_CREATE|os.O_RDWR, os.ModePerm)
+	if err != nil {
+		err = errors.New("open break point file failed,err:" + err.Error())
+		return
+	}
+	b, err := ioutil.ReadAll(breakFile)
+	if err != nil {
+		return
+	}
+	start := string(b)
+
+	var resourceFile *os.File
+	fmt.Println(resourceName)
+	resourceFile, err = os.OpenFile(resourceName, os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = nil
+		} else {
+			err = errors.New("open resource file failed,err:" + err.Error())
+			return
+		}
+	}
+
+	upFile, err := file.Open()
+	if err != nil {
+		err = errors.New("open upload file failed,err:" + err.Error())
+		return
+	}
+
+	// 存储
+	count, _ := strconv.ParseInt(start, 10, 64)
+	resourceFile.Seek(count, 0)
+	upFile.Seek(count, 0)
+	data := make([]byte, 1024, 1024)
+	var upTotal, total, Len = 0, 0, 0
+
+	for {
+		total, err = upFile.Read(data)
+		if err == io.EOF {
+			// 删除文件 需要先关闭该文件
+			err = upFile.Close()
+			err = resourceFile.Close()
+			err = breakFile.Close()
+			if err != nil {
+				err = errors.New("临时记录文件关闭失败" + err.Error())
+				log.Println(err)
+			}
+			err = os.Remove(breakPointPath)
+			if err != nil {
+				err = errors.New("临时记录文件删除失败" + err.Error())
+				log.Println(err)
+			}
+			break
+		}
+		Len, err = resourceFile.Write(data[:total])
+		if err != nil {
+			err = errors.New("write file failed,err:" + err.Error())
+			return
+		}
+		upTotal += Len
+		// 记录上传长度
+		count += int64(Len)
+		breakFile.Seek(0, 0)
+		breakFile.WriteString(strconv.Itoa(int(count)))
+		// 模拟断开
+		//if count > 4438903 {
+		//  log.Fatal("模拟上传中断")
+		//}
+	}
+	return nil
+}
+
 // DealWithFile 对文件预处理
 func DealWithFile(file *multipart.FileHeader) (res bool, filename string, err error) {
 	res = false
@@ -185,11 +273,11 @@ func DealWithFile(file *multipart.FileHeader) (res bool, filename string, err er
 	fileSuffix := path.Ext(file.Filename)
 
 	// 判断是否存在这个文件后缀的文件夹
-	bathPath := "./uploadFile"
+	bathPath := "./uploadFile/"
 	_, err = os.Stat(bathPath + fileSuffix[1:])
 	if err == nil {
 		// 存在则存入对应文件夹
-		bathPath += "/" + fileSuffix[1:]
+		bathPath += fileSuffix[1:] + "/"
 	} else if os.IsNotExist(err) {
 		// 不存在则默认路径
 		err = nil
@@ -209,12 +297,8 @@ func DealWithFile(file *multipart.FileHeader) (res bool, filename string, err er
 
 	//用md5生成唯一的文件指纹，返回保存到本地
 	res = true
-	filename = bathPath + "/" + MD5(data) + fileSuffix
+	filename = bathPath + MD5(data) + fileSuffix
 	return
-}
-
-func IsRepeatFile(filename string) bool {
-	return filepath.IsAbs(filename)
 }
 
 func MD5(data []byte) string {
