@@ -29,6 +29,22 @@ var (
 	ErrOfSameName   = errors.New("文件名重复")
 )
 
+func GetUserFileByCategory(username string, category string) ([]model.UserResources, error) {
+	urs, err := GetAllUserResource(username)
+	if err != nil {
+		return nil, err
+	}
+
+	var res []model.UserResources
+	for _, ur := range urs {
+		if ur.Folder == category {
+			res = append(res, ur)
+		}
+	}
+
+	return res, nil
+}
+
 func UpdateFileAttribute(old model.UserResources, new, username string, chose int) (res bool, err error) {
 	_, err = dao.DelResourceFile(username, old.Filename)
 	switch chose {
@@ -135,6 +151,14 @@ func DealWithFile(file *multipart.FileHeader) (res bool, filename string, err er
 
 	fileSuffix := path.Ext(file.Filename)
 
+	bathPath := "./uploadFile"
+	_, err = os.Stat(bathPath)
+	if err == nil {
+		bathPath += "/" + fileSuffix[1:]
+	} else if os.IsNotExist(err) {
+		err = nil
+	}
+
 	data := make([]byte, file.Size)
 	dealFile, err := file.Open()
 	if err != nil {
@@ -148,7 +172,7 @@ func DealWithFile(file *multipart.FileHeader) (res bool, filename string, err er
 
 	//用md5生成唯一的文件指纹，返回保存到本地
 	res = true
-	filename = "./uploadFile/" + MD5(data) + fileSuffix
+	filename = bathPath + "/" + MD5(data) + fileSuffix
 	return
 }
 

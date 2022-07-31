@@ -192,7 +192,7 @@ func downloadPublicFile(ctx *gin.Context) {
 	}
 
 	if ur.Permission != service.Public {
-		tool.RespErrorWithDate(ctx, "没有权限下载该文件")
+		ctx.JSON(http.StatusForbidden, "没有权限下载该文件")
 		return
 	}
 
@@ -352,6 +352,25 @@ func uploadFile(ctx *gin.Context) {
 	}
 
 	tool.RespSuccessful(ctx)
+}
+
+func getUserFileByCategory(ctx *gin.Context) {
+	iUsername, _ := ctx.Get("username")
+	username := iUsername.(string)
+
+	category, res := ctx.GetQuery("category")
+	if !res {
+		tool.RespErrorWithDate(ctx, "文件夹名称为空")
+		return
+	}
+
+	urs, err := service.GetUserFileByCategory(username, category)
+	if err != nil {
+		log.Println(err)
+		tool.RespInternetError(ctx)
+		return
+	}
+	tool.RespSuccessfulWithDate(ctx, urs)
 }
 
 func getUserAllFile(ctx *gin.Context) {

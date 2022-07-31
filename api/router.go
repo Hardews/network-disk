@@ -27,7 +27,8 @@ func InitRouter() {
 	user := engine.Group("/user")
 	{
 		user.Use(middleware.JwtToken)
-		user.GET("/resource", getUserAllFile)                    // 获取该用户的所有文件信息
+		user.GET("/resource/all", getUserAllFile)                // 获取该用户的所有文件信息
+		user.GET("/resource", getUserFileByCategory)             // 根据文件夹路径获取
 		user.PUT("/resource", updateFileAttribute)               // 修改文件名或存储路径
 		user.GET("/share/normal/:filename", shareFile)           // 正常分享文件
 		user.GET("/share/QrCode/:filename", qrCode)              // 二维码分享
