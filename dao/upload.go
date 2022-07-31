@@ -3,7 +3,7 @@ package dao
 import "network-disk/model"
 
 func ResourcesFile(username string, ur model.UserResources) (bool, error) {
-	urStr := ur.ResourceName + ":" + ur.Permission + ":" + ur.CreateAt + ":" + ur.Folder
+	urStr := ur.ResourceName + "&&" + ur.Permission + "&&" + ur.CreateAt + "&&" + ur.Folder + "&&" + ur.DownloadAddr
 	return rdb.HSet("user:"+username, ur.Filename, urStr).Result()
 }
 

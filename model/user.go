@@ -11,5 +11,6 @@ type UserResources struct {
 	Filename     string
 	ResourceName string
 	Permission   string
+	DownloadAddr string
 	CreateAt     string
 }

@@ -110,13 +110,14 @@ func GetAllUserResource(username string) ([]model.UserResources, error) {
 	}
 	var urs []model.UserResources
 	for filename, ur := range urMap {
-		s := strings.Split(ur, ":")
+		s := strings.Split(ur, "&&")
 		ur := model.UserResources{
 			Filename:     filename,
 			ResourceName: s[0],
 			Permission:   s[1],
 			CreateAt:     s[2],
 			Folder:       s[3],
+			DownloadAddr: s[4],
 		}
 		urs = append(urs, ur)
 	}
@@ -129,13 +130,14 @@ func GetUserResource(username, filename string) (ur model.UserResources, err err
 		return
 	}
 
-	s := strings.Split(urStr, ":")
+	s := strings.Split(urStr, "&&")
 	ur = model.UserResources{
 		Filename:     filename,
 		ResourceName: s[0],
 		Permission:   s[1],
 		CreateAt:     s[2],
 		Folder:       s[3],
+		DownloadAddr: s[4],
 	}
 
 	return ur, nil

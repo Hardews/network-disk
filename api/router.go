@@ -19,14 +19,15 @@ func InitRouter() {
 		upload.Use(middleware.JwtToken)
 		upload.POST("/upload", uploadFile)                           // 上传文件
 		upload.DELETE("/upload", delFile)                            // 删除文件
-		upload.GET("/download/:filename", downloadFileByConn)        // 只能通过链接下载
-		upload.GET("/:username/:filename", downloadPublicFile)       // 公开的文件
-		upload.POST("/encryption/:filename", downloadEncryptionFile) // 加密的文件
+		upload.GET("/download/:filename", downloadFileByConn)        // 链接下载
+		upload.GET("/:username/:filename", downloadPublicFile)       // 下载公开的文件
+		upload.POST("/encryption/:filename", downloadEncryptionFile) // 下载加密的文件
 	}
 
 	user := engine.Group("/user")
 	{
 		user.Use(middleware.JwtToken)
+		user.GET("/download/:filename", downloadUserFile)        // 下载用户自己的文件
 		user.GET("/resource/all", getUserAllFile)                // 获取该用户的所有文件信息
 		user.GET("/resource", getUserFileByCategory)             // 根据文件夹路径获取
 		user.PUT("/resource", updateFileAttribute)               // 修改文件名或存储路径

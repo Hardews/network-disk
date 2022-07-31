@@ -215,6 +215,24 @@ func downloadFileByConn(ctx *gin.Context) {
 	downloadFile(ctx, filename, resource)
 }
 
+func downloadUserFile(ctx *gin.Context) {
+	filename := ctx.Param("filename")
+	iUsername, _ := ctx.Get("username")
+	username := iUsername.(string)
+
+	ur, err := service.GetUserResource(username, filename)
+	if err != nil {
+		if err == redis.Nil {
+			tool.RespErrorWithDate(ctx, "没有该文件")
+			return
+		}
+		log.Println(err)
+		tool.RespInternetError(ctx)
+		return
+	}
+	downloadFile(ctx, filename, ur.ResourceName)
+}
+
 func downloadFile(ctx *gin.Context, filename, resource string) {
 	file, err := os.Open(resource)
 	if err != nil {
@@ -302,7 +320,7 @@ func uploadFile(ctx *gin.Context) {
 
 	folder := ctx.PostForm("folder")
 	if folder == "" {
-		folder = "main folder"
+		folder = "main"
 	}
 
 	file, err := ctx.FormFile("file")
@@ -327,7 +345,18 @@ func uploadFile(ctx *gin.Context) {
 		return
 	}
 
+	//var breakFile *os.File
 	if !service.IsRepeatFile(filename) {
+		//breakPointPath := "./uploadFile/breakPoint/" + username + filename
+		//if !filepath.IsAbs(breakPointPath) {
+		//	// 如果不存在断点文件则创建
+		//	breakFile, err = os.Create(breakPointPath)
+		//	if err != nil {
+		//		log.Println(err)
+		//		tool.RespErrorWithDate(ctx, "上传失败，请重试")
+		//		return
+		//	}
+		//}
 		err = ctx.SaveUploadedFile(file, filename)
 		if err != nil {
 			log.Println("上传文件失败,err:", err)
@@ -341,6 +370,7 @@ func uploadFile(ctx *gin.Context) {
 		Filename:     file.Filename,
 		ResourceName: filename,
 		Permission:   attribute,
+		DownloadAddr: basePath + "user/download/" + file.Filename,
 		CreateAt:     time.Now().String(),
 	}
 
