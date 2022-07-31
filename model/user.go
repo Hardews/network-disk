@@ -8,6 +8,7 @@ type User struct {
 
 type UserResources struct {
 	Folder       string
+	Path         string
 	Filename     string
 	ResourceName string
 	Permission   string

@@ -46,7 +46,7 @@ func GetUserFileByCategory(username string, category string) ([]model.UserResour
 }
 
 func UpdateFileAttribute(old model.UserResources, new, username string, chose int) (res bool, err error) {
-	_, err = dao.DelResourceFile(username, old.Filename)
+	_, err = dao.DelResourceFile(username, old.Filename, old.Path, old.Folder)
 	switch chose {
 	case updateName:
 		old.Filename = new
@@ -56,14 +56,14 @@ func UpdateFileAttribute(old model.UserResources, new, username string, chose in
 			return
 		}
 		for _, ur := range urs {
-			if ur.Filename == new && ur.Folder == old.Folder {
+			if ur.Filename == new && ur.Folder == old.Folder && ur.Path == old.Path {
 				return false, ErrOfSameName
 			}
 		}
 	case updateAttr:
 		old.Permission = new
 	case updatePath:
-		old.Folder = new
+		old.Path = new
 	default:
 		err = ErrOfNoKnow
 		return
@@ -71,9 +71,9 @@ func UpdateFileAttribute(old model.UserResources, new, username string, chose in
 	return dao.ResourcesFile(username, old)
 }
 
-func DelFile(username string, filename, resource string) (err error) {
+func DelFile(username string, filename, resource, path, folder string) (err error) {
 	// 检查该用户是否有存储该文件
-	_, err = dao.GetUserResource(username, filename)
+	_, err = dao.GetUserResource(username, filename, path, folder)
 	if err != nil {
 		return
 	}
@@ -90,7 +90,7 @@ func DelFile(username string, filename, resource string) (err error) {
 		}
 	}
 
-	_, err = dao.DelResourceFile(username, filename)
+	_, err = dao.DelResourceFile(username, filename, path, folder)
 	return
 }
 
@@ -109,23 +109,26 @@ func GetAllUserResource(username string) ([]model.UserResources, error) {
 		return nil, err
 	}
 	var urs []model.UserResources
-	for filename, ur := range urMap {
-		s := strings.Split(ur, "&&")
+	for key, ur := range urMap {
+		s1 := strings.Split(key, "&&")
+		s2 := strings.Split(ur, "&&")
 		ur := model.UserResources{
-			Filename:     filename,
-			ResourceName: s[0],
-			Permission:   s[1],
-			CreateAt:     s[2],
-			Folder:       s[3],
-			DownloadAddr: s[4],
+			Path:     s1[0],
+			Filename: s1[1],
+			Folder:   s1[2],
+
+			ResourceName: s2[0],
+			Permission:   s2[1],
+			CreateAt:     s2[2],
+			DownloadAddr: s2[3],
 		}
 		urs = append(urs, ur)
 	}
 	return urs, nil
 }
 
-func GetUserResource(username, filename string) (ur model.UserResources, err error) {
-	urStr, err := dao.GetUserResource(username, filename)
+func GetUserResource(username, filename, path, folder string) (ur model.UserResources, err error) {
+	urStr, err := dao.GetUserResource(username, filename, path, folder)
 	if err != nil {
 		return
 	}
@@ -136,11 +139,26 @@ func GetUserResource(username, filename string) (ur model.UserResources, err err
 		ResourceName: s[0],
 		Permission:   s[1],
 		CreateAt:     s[2],
-		Folder:       s[3],
+		Folder:       folder,
 		DownloadAddr: s[4],
+		Path:         path,
 	}
 
 	return ur, nil
+}
+
+func IsRepeatFilename(username, filename, folder, path string) (res bool, err error) {
+	urs, err := GetAllUserResource(username)
+	if err != nil {
+		return
+	}
+
+	for _, ur := range urs {
+		if ur.Filename == filename && ur.Folder == folder && ur.Path == path {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 func DealWithFile(file *multipart.FileHeader) (res bool, filename string, err error) {

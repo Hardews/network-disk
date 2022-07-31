@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,9 @@ import (
 const basePath = "http://127.0.0.1:8080/"
 
 func encryptionShare(ctx *gin.Context) {
+	iUsername, _ := ctx.Get("username")
+	username := iUsername.(string)
+
 	pwd := ctx.Request.Header.Get("password")
 	var tmp string
 	if pwd == "" {
@@ -30,8 +34,10 @@ func encryptionShare(ctx *gin.Context) {
 	}
 	pwd = service.MD5([]byte(pwd))
 	filename := ctx.Param("filename")
+	Path, _ := ctx.GetQuery("path")
+	folder, _ := ctx.GetQuery("category")
 
-	str := pwd + "_" + filename
+	str := pwd + "_" + filename + "_" + username + "_" + Path + "_" + folder
 	str = base64.URLEncoding.EncodeToString([]byte(str))
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -44,8 +50,10 @@ func qrCode(ctx *gin.Context) {
 	filename := ctx.Param("filename")
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
+	folder, _ := ctx.GetQuery("category")
+	Path, _ := ctx.GetQuery("path")
 
-	ur, err := service.GetUserResource(username, filename)
+	ur, err := service.GetUserResource(username, filename, Path, folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
@@ -79,8 +87,10 @@ func delFile(ctx *gin.Context) {
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
 	filename := ctx.PostForm("filename")
+	Path := ctx.PostForm("path")
+	folder := ctx.PostForm("category")
 
-	ur, err := service.GetUserResource(username, filename)
+	ur, err := service.GetUserResource(username, filename, Path, folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
@@ -91,7 +101,7 @@ func delFile(ctx *gin.Context) {
 		return
 	}
 
-	err = service.DelFile(username, ur.Filename, ur.ResourceName)
+	err = service.DelFile(username, ur.Filename, ur.ResourceName, Path, folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "您没有该文件")
@@ -110,6 +120,8 @@ func updateFileAttribute(ctx *gin.Context) {
 	username := iUsername.(string)
 	filename := ctx.PostForm("filename")
 	c := ctx.PostForm("chose")
+	Path := ctx.PostForm("path")
+	folder := ctx.PostForm("category")
 
 	chose, err := strconv.Atoi(c)
 	if err != nil {
@@ -120,7 +132,7 @@ func updateFileAttribute(ctx *gin.Context) {
 
 	newVal := ctx.PostForm("new")
 
-	ur, err := service.GetUserResource(username, filename)
+	ur, err := service.GetUserResource(username, filename, Path, folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
@@ -152,17 +164,22 @@ func updateFileAttribute(ctx *gin.Context) {
 func downloadEncryptionFile(ctx *gin.Context) {
 	pwd := ctx.PostForm("password")
 	str, err := base64.URLEncoding.DecodeString(ctx.Param("filename"))
-	iUsername, _ := ctx.Get("username")
-	username := iUsername.(string)
 
 	s := strings.Split(string(str), "_")
 
-	if service.MD5([]byte(pwd)) != s[0] {
+	passwordSet := s[0]
+
+	if service.MD5([]byte(pwd)) != passwordSet {
 		tool.RespErrorWithDate(ctx, "密码错误")
 		return
 	}
 
-	ur, err := service.GetUserResource(username, s[1])
+	username := s[2]
+	filename := s[1]
+	Path := s[3]
+	folder := s[4]
+
+	ur, err := service.GetUserResource(username, filename, Path, folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
@@ -179,8 +196,10 @@ func downloadEncryptionFile(ctx *gin.Context) {
 func downloadPublicFile(ctx *gin.Context) {
 	username := ctx.Param("username")
 	filename := ctx.Param("filename")
+	Path, _ := ctx.GetQuery("path")
+	folder, _ := ctx.GetQuery("category")
 
-	ur, err := service.GetUserResource(username, filename)
+	ur, err := service.GetUserResource(username, filename, Path, folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
@@ -217,10 +236,12 @@ func downloadFileByConn(ctx *gin.Context) {
 
 func downloadUserFile(ctx *gin.Context) {
 	filename := ctx.Param("filename")
+	Path, _ := ctx.GetQuery("path")
+	folder, _ := ctx.GetQuery("category")
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
 
-	ur, err := service.GetUserResource(username, filename)
+	ur, err := service.GetUserResource(username, filename, Path, folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
@@ -279,8 +300,10 @@ func shareFile(ctx *gin.Context) {
 	username := iUsername.(string)
 	filename := ctx.Param("filename")
 	permission := ctx.Request.Header.Get("permission")
+	Path, _ := ctx.GetQuery("path")
+	folder, _ := ctx.GetQuery("category")
 
-	ur, err := service.GetUserResource(username, filename)
+	ur, err := service.GetUserResource(username, filename, Path, folder)
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
@@ -305,7 +328,7 @@ func shareFile(ctx *gin.Context) {
 	case service.Permission:
 		// 使人们只能通过分享连接下载的想法是将url进行base64编码
 		str = base64.URLEncoding.EncodeToString([]byte(filename + "-" + ur.ResourceName))
-		tool.RespSuccessfulWithDate(ctx, basePath+"download_conn/"+str)
+		tool.RespSuccessfulWithDate(ctx, basePath+"download/"+str)
 	}
 }
 
@@ -318,9 +341,16 @@ func uploadFile(ctx *gin.Context) {
 		attribute = service.Public
 	}
 
-	folder := ctx.PostForm("folder")
+	folder := ctx.PostForm("category")
 	if folder == "" {
-		folder = "main"
+		tool.RespErrorWithDate(ctx, "未指定文件夹")
+		return
+	}
+
+	Path := ctx.PostForm("path")
+	if Path == "" {
+		tool.RespErrorWithDate(ctx, "未指定路径")
+		return
 	}
 
 	file, err := ctx.FormFile("file")
@@ -334,7 +364,7 @@ func uploadFile(ctx *gin.Context) {
 		return
 	}
 
-	res, filename, err := service.DealWithFile(file)
+	res, resourceName, err := service.DealWithFile(file)
 	if !res {
 		log.Println(err)
 		tool.RespInternetError(ctx)
@@ -346,7 +376,7 @@ func uploadFile(ctx *gin.Context) {
 	}
 
 	//var breakFile *os.File
-	if !service.IsRepeatFile(filename) {
+	if !service.IsRepeatFile(resourceName) {
 		//breakPointPath := "./uploadFile/breakPoint/" + username + filename
 		//if !filepath.IsAbs(breakPointPath) {
 		//	// 如果不存在断点文件则创建
@@ -357,7 +387,7 @@ func uploadFile(ctx *gin.Context) {
 		//		return
 		//	}
 		//}
-		err = ctx.SaveUploadedFile(file, filename)
+		err = ctx.SaveUploadedFile(file, resourceName)
 		if err != nil {
 			log.Println("上传文件失败,err:", err)
 			tool.RespErrorWithDate(ctx, "服务器错误，上传文件失败")
@@ -365,10 +395,25 @@ func uploadFile(ctx *gin.Context) {
 		}
 	}
 
+	var filename = file.Filename
+
+	res, err = service.IsRepeatFilename(username, file.Filename, folder, Path)
+	if err != nil {
+		log.Println("判断重复名失败,err:", err)
+		tool.RespErrorWithDate(ctx, "服务器错误，上传文件失败")
+		return
+	}
+	if !res {
+		fileSuffix := path.Ext(file.Filename)
+		Len := len(file.Filename) - len(fileSuffix)
+		filename = file.Filename[:Len] + time.Now().Format("20060102_030405") + fileSuffix
+	}
+
 	var storage = model.UserResources{
 		Folder:       folder,
-		Filename:     file.Filename,
-		ResourceName: filename,
+		Path:         Path,
+		Filename:     filename,
+		ResourceName: resourceName,
 		Permission:   attribute,
 		DownloadAddr: basePath + "user/download/" + file.Filename,
 		CreateAt:     time.Now().String(),

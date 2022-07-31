@@ -3,20 +3,21 @@ package dao
 import "network-disk/model"
 
 func ResourcesFile(username string, ur model.UserResources) (bool, error) {
-	urStr := ur.ResourceName + "&&" + ur.Permission + "&&" + ur.CreateAt + "&&" + ur.Folder + "&&" + ur.DownloadAddr
-	return rdb.HSet("user:"+username, ur.Filename, urStr).Result()
+	key := ur.Path + "&&" + ur.Filename + "&&" + ur.Folder
+	urStr := ur.ResourceName + "&&" + ur.Permission + "&&" + ur.CreateAt + "&&" + ur.DownloadAddr
+	return rdb.HSet("user:"+username, key, urStr).Result()
 }
 
-func DelResourceFile(username, filename string) (int64, error) {
-	return rdb.HDel("user:"+username, filename).Result()
+func DelResourceFile(username, filename, path, folder string) (int64, error) {
+	return rdb.HDel("user:"+username, path+"&&"+filename+"&&"+folder).Result()
 }
 
 func GetUserAllResource(username string) (map[string]string, error) {
 	return rdb.HGetAll("user:" + username).Result()
 }
 
-func GetUserResource(username, filename string) (string, error) {
-	return rdb.HGet("user:"+username, filename).Result()
+func GetUserResource(username, filename, path, folder string) (string, error) {
+	return rdb.HGet("user:"+username, path+"&&"+filename+"&&"+folder).Result()
 }
 
 func ResourceIncr(resourceName string) (int64, error) {
