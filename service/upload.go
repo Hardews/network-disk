@@ -29,7 +29,7 @@ var (
 	ErrOfSameName   = errors.New("文件名重复")
 )
 
-func GetUserFileByCategory(username string, category string) ([]model.UserResources, error) {
+func GetUserFileByCategory(username string, category string, Path string) ([]model.UserResources, error) {
 	urs, err := GetAllUserResource(username)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func GetUserFileByCategory(username string, category string) ([]model.UserResour
 
 	var res []model.UserResources
 	for _, ur := range urs {
-		if ur.Folder == category {
+		if ur.Folder == category && ur.Path == Path {
 			res = append(res, ur)
 		}
 	}
@@ -45,8 +45,13 @@ func GetUserFileByCategory(username string, category string) ([]model.UserResour
 	return res, nil
 }
 
+// UpdateFileAttribute 更新文件属性
 func UpdateFileAttribute(old model.UserResources, new, username string, chose int) (res bool, err error) {
+	// 先删除后更改
 	_, err = dao.DelResourceFile(username, old.Filename, old.Path, old.Folder)
+	if err != nil {
+		return
+	}
 	switch chose {
 	case updateName:
 		old.Filename = new
@@ -56,6 +61,7 @@ func UpdateFileAttribute(old model.UserResources, new, username string, chose in
 			return
 		}
 		for _, ur := range urs {
+			// 判断是否重命名
 			if ur.Filename == new && ur.Folder == old.Folder && ur.Path == old.Path {
 				return false, ErrOfSameName
 			}
@@ -71,6 +77,7 @@ func UpdateFileAttribute(old model.UserResources, new, username string, chose in
 	return dao.ResourcesFile(username, old)
 }
 
+// DelFile 删除文件
 func DelFile(username string, filename, resource, path, folder string) (err error) {
 	// 检查该用户是否有存储该文件
 	_, err = dao.GetUserResource(username, filename, path, folder)
@@ -108,6 +115,8 @@ func GetAllUserResource(username string) ([]model.UserResources, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// 遍历得到的map，处理获取到的数据
 	var urs []model.UserResources
 	for key, ur := range urMap {
 		s1 := strings.Split(key, "&&")
@@ -127,6 +136,7 @@ func GetAllUserResource(username string) ([]model.UserResources, error) {
 	return urs, nil
 }
 
+// GetUserResource 根据信息来获取资源信息
 func GetUserResource(username, filename, path, folder string) (ur model.UserResources, err error) {
 	urStr, err := dao.GetUserResource(username, filename, path, folder)
 	if err != nil {
@@ -161,24 +171,31 @@ func IsRepeatFilename(username, filename, folder, path string) (res bool, err er
 	return true, nil
 }
 
+// DealWithFile 对文件预处理
 func DealWithFile(file *multipart.FileHeader) (res bool, filename string, err error) {
 	res = false
+	// 判断文件是否过大
 	if file.Size > 1024*1024*1024*5 {
 		res = true
 		err = ErrOfFileTooBig
 		return
 	}
 
+	// 获取后缀
 	fileSuffix := path.Ext(file.Filename)
 
+	// 判断是否存在这个文件后缀的文件夹
 	bathPath := "./uploadFile"
-	_, err = os.Stat(bathPath)
+	_, err = os.Stat(bathPath + fileSuffix[1:])
 	if err == nil {
+		// 存在则存入对应文件夹
 		bathPath += "/" + fileSuffix[1:]
 	} else if os.IsNotExist(err) {
+		// 不存在则默认路径
 		err = nil
 	}
 
+	// 读取文件内容
 	data := make([]byte, file.Size)
 	dealFile, err := file.Open()
 	if err != nil {

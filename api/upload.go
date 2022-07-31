@@ -46,10 +46,13 @@ func encryptionShare(ctx *gin.Context) {
 	})
 }
 
+// qrCode 二维码分享，用了github.com/skip2/go-qrcode包
 func qrCode(ctx *gin.Context) {
 	filename := ctx.Param("filename")
+
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
+
 	folder, _ := ctx.GetQuery("category")
 	Path, _ := ctx.GetQuery("path")
 
@@ -80,13 +83,16 @@ func qrCode(ctx *gin.Context) {
 		return
 	}
 
+	// 将二维码图生成并返回
 	err = qr.Write(256, ctx.Writer)
 }
 
 func delFile(ctx *gin.Context) {
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
+
 	filename := ctx.PostForm("filename")
+
 	Path := ctx.PostForm("path")
 	folder := ctx.PostForm("category")
 
@@ -115,13 +121,17 @@ func delFile(ctx *gin.Context) {
 	tool.RespSuccessful(ctx)
 }
 
+// updateFileAttribute 更新文件的属性
 func updateFileAttribute(ctx *gin.Context) {
+	// 获取各种信息
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
+
 	filename := ctx.PostForm("filename")
-	c := ctx.PostForm("chose")
 	Path := ctx.PostForm("path")
 	folder := ctx.PostForm("category")
+	// 这个是表明它想更改的是什么，路径，文件名。。。
+	c := ctx.PostForm("chose")
 
 	chose, err := strconv.Atoi(c)
 	if err != nil {
@@ -130,6 +140,7 @@ func updateFileAttribute(ctx *gin.Context) {
 		return
 	}
 
+	// 这个是应传入的新名称或路径
 	newVal := ctx.PostForm("new")
 
 	ur, err := service.GetUserResource(username, filename, Path, folder)
@@ -174,6 +185,7 @@ func downloadEncryptionFile(ctx *gin.Context) {
 		return
 	}
 
+	// 加密时url中存了这四个数据 username 是拥有者的id
 	username := s[2]
 	filename := s[1]
 	Path := s[3]
@@ -220,6 +232,7 @@ func downloadPublicFile(ctx *gin.Context) {
 
 func downloadFileByConn(ctx *gin.Context) {
 	name := ctx.Param("filename")
+
 	str, err := base64.URLEncoding.DecodeString(name)
 	if err != nil {
 		log.Println(err)
@@ -234,10 +247,14 @@ func downloadFileByConn(ctx *gin.Context) {
 	downloadFile(ctx, filename, resource)
 }
 
+// downloadUserFile 用户下载自己的资源
 func downloadUserFile(ctx *gin.Context) {
+	// 获取各种东西
 	filename := ctx.Param("filename")
+
 	Path, _ := ctx.GetQuery("path")
 	folder, _ := ctx.GetQuery("category")
+
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
 
@@ -251,9 +268,11 @@ func downloadUserFile(ctx *gin.Context) {
 		tool.RespInternetError(ctx)
 		return
 	}
+
 	downloadFile(ctx, filename, ur.ResourceName)
 }
 
+// downloadFile 文件下载
 func downloadFile(ctx *gin.Context, filename, resource string) {
 	file, err := os.Open(resource)
 	if err != nil {
@@ -278,15 +297,18 @@ func downloadFile(ctx *gin.Context, filename, resource string) {
 		return
 	}
 
+	// 设置响应头
 	ctx.Writer.Header().Set("Content-Disposition", "attachment;filename="+filename)
 	ctx.Writer.Header().Set("Content-Type", http.DetectContentType(fileHeader))
 	ctx.Writer.Header().Set("Content-Length", strconv.FormatInt(fileStat.Size(), 10))
 
+	// 设置初始偏移量
 	file.Seek(0, 0)
 
 	for {
 		var n int
-		tmp := make([]byte, 10) // 通过控制切片大小控制下载速度
+		// 通过控制切片大小控制下载速度
+		tmp := make([]byte, 10)
 		n, err = file.Read(tmp)
 		if err == io.EOF {
 			return
@@ -295,14 +317,21 @@ func downloadFile(ctx *gin.Context, filename, resource string) {
 	}
 }
 
+// shareFile 分享文件
 func shareFile(ctx *gin.Context) {
+	// 获取用户名
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
+	// 获取文件名
 	filename := ctx.Param("filename")
+	// 获取权限设置
 	permission := ctx.Request.Header.Get("permission")
+	// 获取路径
 	Path, _ := ctx.GetQuery("path")
+	// 获取文件夹位置
 	folder, _ := ctx.GetQuery("category")
 
+	// 获取该用户想分享的资源的信息
 	ur, err := service.GetUserResource(username, filename, Path, folder)
 	if err != nil {
 		if err == redis.Nil {
@@ -316,6 +345,7 @@ func shareFile(ctx *gin.Context) {
 
 	var str string
 
+	// 此参数为空时按最初设置的来
 	if permission != "" {
 		ur.Permission = permission
 	}
@@ -332,27 +362,33 @@ func shareFile(ctx *gin.Context) {
 	}
 }
 
+// uploadFile 上传文件
 func uploadFile(ctx *gin.Context) {
+	// 获取用户名
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
 
+	// 获取属性,不设置则为公开
 	attribute := ctx.PostForm("attribute")
 	if attribute == "" {
 		attribute = service.Public
 	}
 
+	// 获取存储的文件夹
 	folder := ctx.PostForm("category")
 	if folder == "" {
 		tool.RespErrorWithDate(ctx, "未指定文件夹")
 		return
 	}
 
+	// 获取存储的路径
 	Path := ctx.PostForm("path")
 	if Path == "" {
 		tool.RespErrorWithDate(ctx, "未指定路径")
 		return
 	}
 
+	// 获取要上传的文件
 	file, err := ctx.FormFile("file")
 	if err != nil {
 		log.Println("get file failed,err:", err)
@@ -364,6 +400,7 @@ func uploadFile(ctx *gin.Context) {
 		return
 	}
 
+	// 预处理文件
 	res, resourceName, err := service.DealWithFile(file)
 	if !res {
 		log.Println(err)
@@ -374,6 +411,10 @@ func uploadFile(ctx *gin.Context) {
 		tool.RespSuccessfulWithDate(ctx, err)
 		return
 	}
+
+	// 判断是否与已存在资源的内容重复
+	// 重复: 只存一个对应的连接
+	// 不重复: 存在服务器
 
 	//var breakFile *os.File
 	if !service.IsRepeatFile(resourceName) {
@@ -387,6 +428,8 @@ func uploadFile(ctx *gin.Context) {
 		//		return
 		//	}
 		//}
+
+		// 存储
 		err = ctx.SaveUploadedFile(file, resourceName)
 		if err != nil {
 			log.Println("上传文件失败,err:", err)
@@ -397,6 +440,8 @@ func uploadFile(ctx *gin.Context) {
 
 	var filename = file.Filename
 
+	// 这里是判断用户上传的文件名是否与存在的文件名重复
+	// 如果重复，帮它改名字
 	res, err = service.IsRepeatFilename(username, file.Filename, folder, Path)
 	if err != nil {
 		log.Println("判断重复名失败,err:", err)
@@ -409,6 +454,7 @@ func uploadFile(ctx *gin.Context) {
 		filename = file.Filename[:Len] + time.Now().Format("20060102_030405") + fileSuffix
 	}
 
+	// 在redis中存储的结构
 	var storage = model.UserResources{
 		Folder:       folder,
 		Path:         Path,
@@ -419,6 +465,7 @@ func uploadFile(ctx *gin.Context) {
 		CreateAt:     time.Now().String(),
 	}
 
+	// 存储在redis中
 	_, err = service.StorageFile(username, storage)
 	if err != nil {
 		log.Println("storage file failed,err:", err)
@@ -429,17 +476,27 @@ func uploadFile(ctx *gin.Context) {
 	tool.RespSuccessful(ctx)
 }
 
+// getUserFileByCategory 获取指定路径的文件
 func getUserFileByCategory(ctx *gin.Context) {
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
 
+	// 获取文件夹名称
 	category, res := ctx.GetQuery("category")
 	if !res {
 		tool.RespErrorWithDate(ctx, "文件夹名称为空")
 		return
 	}
 
-	urs, err := service.GetUserFileByCategory(username, category)
+	// 获取路径
+	Path, res := ctx.GetQuery("path")
+	if !res {
+		tool.RespErrorWithDate(ctx, "路径为空")
+		return
+	}
+
+	// 获取想要的文件信息
+	urs, err := service.GetUserFileByCategory(username, category, Path)
 	if err != nil {
 		log.Println(err)
 		tool.RespInternetError(ctx)
@@ -448,6 +505,7 @@ func getUserFileByCategory(ctx *gin.Context) {
 	tool.RespSuccessfulWithDate(ctx, urs)
 }
 
+// getUserAllFile 获取用户的所有文件
 func getUserAllFile(ctx *gin.Context) {
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
