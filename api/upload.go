@@ -22,14 +22,22 @@ import (
 const basePath = "http://127.0.0.1:8080/"
 
 func encryptionShare(ctx *gin.Context) {
-	pwd := ctx.PostForm("password")
-	if pwd != "" {
+	pwd := ctx.Request.Header.Get("password")
+	var tmp string
+	if pwd == "" {
 		pwd = service.RandomStr(4)
-		pwd = service.MD5([]byte(pwd))
+		tmp = pwd
 	}
+	pwd = service.MD5([]byte(pwd))
 	filename := ctx.Param("filename")
 
-	tool.RespSuccessfulWithDate(ctx, basePath+"/encryption/"+filename+"_"+pwd)
+	str := pwd + "_" + filename
+	str = base64.URLEncoding.EncodeToString([]byte(str))
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"password": tmp,
+		"path":     basePath + "encryption/" + str,
+	})
 }
 
 func qrCode(ctx *gin.Context) {
@@ -55,7 +63,7 @@ func qrCode(ctx *gin.Context) {
 	case service.Private:
 		tool.RespErrorWithDate(ctx, "您设置了仅自己可见，无法分享")
 	case service.Permission:
-		str := basePath + "download_conn/"
+		str := basePath + "download/"
 		str += base64.URLEncoding.EncodeToString([]byte(filename + "-" + ur.ResourceName))
 		qr, err = qrcode.New(str, qrcode.Medium)
 	}
@@ -143,18 +151,18 @@ func updateFileAttribute(ctx *gin.Context) {
 
 func downloadEncryptionFile(ctx *gin.Context) {
 	pwd := ctx.PostForm("password")
-	str := ctx.Param("filename")
+	str, err := base64.URLEncoding.DecodeString(ctx.Param("filename"))
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
 
-	s := strings.Split(str, "_")
+	s := strings.Split(string(str), "_")
 
-	if service.MD5([]byte(s[1])) != pwd {
+	if service.MD5([]byte(pwd)) != s[0] {
 		tool.RespErrorWithDate(ctx, "密码错误")
 		return
 	}
 
-	ur, err := service.GetUserResource(username, s[0])
+	ur, err := service.GetUserResource(username, s[1])
 	if err != nil {
 		if err == redis.Nil {
 			tool.RespErrorWithDate(ctx, "没有该文件")
