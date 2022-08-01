@@ -1,7 +1,7 @@
 ## network-disk 网盘
 ### 架构设计
 
-**|-- ne**twork-disk**
+**|-- network-disk**
     **|-- api**
     **|   |-- admin.go**
     **|   |-- router.go**
@@ -31,7 +31,7 @@
         **|-- mp3**
         **|-- mp4**
         **|-- png**
-        |-- zip**
+        **|-- zip**
 
 ### 实现的功能
 
