@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"gorm.io/gorm"
 
@@ -36,10 +37,22 @@ func Login(user model.User) (res bool, token string, err error) {
 		err = ErrOfWrongPassword
 		return
 	} else {
-		token, flag = middleware.SetToken(user.Username, "用户")
-		if !flag {
-			err = ErrOfInternet
-			return
+		err, flag = IsAdminUser(user.Username)
+		if err != nil {
+			log.Println("service:check admin user failed,err:", err)
+		}
+		if flag {
+			token, flag = middleware.SetToken(user.Username, "管理员")
+			if !flag {
+				err = ErrOfInternet
+				return
+			}
+		} else {
+			token, flag = middleware.SetToken(user.Username, "用户")
+			if !flag {
+				err = ErrOfInternet
+				return
+			}
 		}
 		return
 	}

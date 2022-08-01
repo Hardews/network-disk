@@ -6,6 +6,29 @@ import (
 	"network-disk/model"
 )
 
+func WriteAdmin(username string) error {
+	user := model.AdminUser{Username: username}
+	tx := dB.Begin()
+
+	dx := tx.Create(&user)
+	if err := dx.Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
+func CheckAdminUser(username string) error {
+	tx := dB.Where("username = ?", username).First(&model.AdminUser{})
+	if err := tx.Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 func CheckPassword(username string) (error, model.User) {
 	var check model.User
 	tx := dB.Where("username = ?", username).First(&model.User{}).Scan(&check)

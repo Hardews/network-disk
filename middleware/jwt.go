@@ -99,3 +99,24 @@ func JwtToken(c *gin.Context) {
 
 	c.Set("username", username)
 }
+
+func AdminToken(c *gin.Context) {
+	tokenHeader := c.Request.Header.Get("Authorization")
+	token, err := jwt.ParseWithClaims(tokenHeader, &MyClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+	if err != nil {
+		tool.RespInternetError(c)
+		fmt.Println("check token failed ,err:", err)
+		return
+	}
+	administrator := token.Claims.(*MyClaims).Identity
+
+	if administrator != "管理员" {
+		c.JSON(200, gin.H{
+			"msg": "非管理员，无权限操作",
+		})
+		return
+	}
+	c.Next()
+}

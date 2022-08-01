@@ -36,5 +36,15 @@ func InitRouter() {
 		user.GET("/share/encryption/:filename", encryptionShare) // 加密分享
 	}
 
+	admin := engine.Group("/admin")
+	{
+		admin.Use(middleware.JwtToken)
+		admin.Use(middleware.AdminToken)
+		admin.POST("/login", adminLogin)
+		admin.POST("/register", adminRegister)
+		admin.GET("/resource/all", adminGetUserAllFile) // 获取用户保存的文件
+		admin.PUT("/resource", adminChangeUserFile)     // 修改违禁文件
+	}
+
 	engine.Run()
 }

@@ -27,9 +27,9 @@ func encryptionShare(ctx *gin.Context) {
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
 
-	pwd := ctx.Request.Header.Get("password")
+	pwd, res := ctx.GetQuery("password")
 	var tmp string
-	if pwd == "" {
+	if !res {
 		pwd = service.RandomStr(4)
 		tmp = pwd
 	}
@@ -104,6 +104,7 @@ func delFile(ctx *gin.Context) {
 	filename := ctx.PostForm("filename")
 
 	Path := ctx.PostForm("path")
+
 	folder := ctx.PostForm("category")
 
 	ur, err := service.GetUserResource(username, filename, Path, folder)
@@ -120,7 +121,7 @@ func delFile(ctx *gin.Context) {
 	err = service.DelFile(username, ur.Filename, ur.ResourceName, Path, folder)
 	if err != nil {
 		if err == redis.Nil {
-			tool.RespErrorWithDate(ctx, "您没有该文件")
+			tool.RespErrorWithDate(ctx, "没有该文件")
 			return
 		}
 		log.Println(err)
@@ -340,8 +341,6 @@ func shareFile(ctx *gin.Context) {
 	username := iUsername.(string)
 	// 获取文件名
 	filename := ctx.Param("filename")
-	// 获取权限设置
-	permission := ctx.Request.Header.Get("permission")
 	// 获取路径
 	storagePath, _ := ctx.GetQuery("path")
 	var Path, err = base64.URLEncoding.DecodeString(storagePath)
@@ -361,11 +360,6 @@ func shareFile(ctx *gin.Context) {
 	}
 
 	var str string
-
-	// 此参数为空时按最初设置的来
-	if permission != "" {
-		ur.Permission = permission
-	}
 
 	switch ur.Permission {
 	case service.Public:
@@ -409,7 +403,7 @@ func uploadFile(ctx *gin.Context) {
 	file, err := ctx.FormFile("file")
 	if err != nil {
 		log.Println("get file failed,err:", err)
-		tool.RespErrorWithDate(ctx, "上传失败")
+		tool.RespErrorWithDate(ctx, "上传失败，请重试")
 		return
 	}
 	if file == nil {

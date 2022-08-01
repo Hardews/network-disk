@@ -6,6 +6,11 @@ type User struct {
 	Password string `gorm:"type:varchar(100)"`
 }
 
+type AdminUser struct {
+	Uid      int    `gorm:"primaryKey;AUTO_INCREMENT=1;not null"`
+	Username string `gorm:"not null;unique;type:varchar(20)"`
+}
+
 type UserResources struct {
 	Folder       string
 	Path         string
