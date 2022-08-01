@@ -372,20 +372,6 @@ func downloadFile(ctx *gin.Context, filename, resource string) {
 	}
 }
 
-// CheckUrl 检查连接是否过期或是否存在
-func CheckUrl(ctx *gin.Context) {
-	res, err := service.IsOverdue(ctx.Request.RequestURI)
-	if err != nil {
-		log.Println("upload:check due failed,err:", err)
-		return
-	}
-	if !res {
-		tool.RespErrorWithDate(ctx, "链接无效或已过期")
-		ctx.Abort()
-		return
-	}
-}
-
 // shareFile 分享文件
 func shareFile(ctx *gin.Context) {
 	// 获取用户名
