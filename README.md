@@ -1,38 +1,39 @@
 ## network-disk 网盘
 ### 架构设计
 
-**|-- network-disk**
-    **|-- api**
-    **|   |-- admin.go**
-    **|   |-- router.go**
-    **|   |-- upload.go**
-    **|   |-- user.go**
-    **|-- cmd**
-    **|   |-- main.go**
-    **|-- dao**
-    **|   |-- dao.go**
-    **|   |-- upload.go**
-    **|   |-- user.go**
-    **|-- middleware**
-    **|   |-- cors.go**
-    **|   |-- jwt.go**
-    **|-- model**
-    **|   |-- user.go**
-    **|-- service**
-    **|   |-- admin.go**
-    **|   |-- encryption.go**
-    **|   |-- upload.go**
-    **|   |-- user.go**
-    **|-- tool**
-    **|   |-- resp.go**
-    **|-- uploadFile**
-        **|-- breakPoint**
-        **|-- jpg**
-        **|-- mp3**
-        **|-- mp4**
-        **|-- png**
-        **|-- zip**
-
+``` 架构设计
+|-- network-disk
+    |-- api
+    |   |-- admin.go
+    |   |-- router.go
+    |   |-- upload.go
+    |   |-- user.go
+    |-- cmd
+    |   |-- main.go
+    |-- dao
+    |   |-- dao.go
+    |   |-- upload.go
+    |   |-- user.go
+    |-- middleware
+    |   |-- cors.go
+    |   |-- jwt.go
+    |-- model
+    |   |-- user.go
+    |-- service
+    |   |-- admin.go
+    |   |-- encryption.go
+    |   |-- upload.go
+    |   |-- user.go
+    |-- tool
+    |   |-- resp.go
+    |-- uploadFile
+        |-- breakPoint
+        |-- jpg
+        |-- mp3
+        |-- mp4
+        |-- png
+        |-- zip
+```
 ### 实现的功能
 
 - [x] **文件上传**
