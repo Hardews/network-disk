@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const basePath = "http://127.0.0.1:8080"
+
 func ResourcesFile(username string, ur model.UserResources) (bool, error) {
 	key := ur.Path + "&&" + ur.Filename + "&&" + ur.Folder
 	urStr := ur.ResourceName + "&&" + ur.Permission + "&&" + ur.CreateAt + "&&" + ur.DownloadAddr
@@ -12,7 +14,7 @@ func ResourcesFile(username string, ur model.UserResources) (bool, error) {
 }
 
 func GetUrl(url string) (string, error) {
-	return rdb.Get(url).Result()
+	return rdb.Get(basePath + url).Result()
 }
 
 func GetForeverUrl(url string) error {

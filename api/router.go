@@ -23,7 +23,7 @@ func InitRouter() {
 
 	download := engine.Group("")
 	{
-		download.Use(middleware.CheckUrl)
+		download.Use(CheckUrl)
 		download.GET("/download/:filename", downloadFileByConn)        // 链接下载
 		download.GET("/:username/:filename", downloadPublicFile)       // 下载公开的文件
 		download.POST("/encryption/:filename", downloadEncryptionFile) // 下载加密的文件

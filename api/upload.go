@@ -44,15 +44,33 @@ func encryptionShare(ctx *gin.Context) {
 		return
 	}
 
+	// 获取设定时间
+	et, _ := ctx.GetQuery("time")
+	eTime, err := strconv.Atoi(et)
+	if err != nil {
+		log.Println("upload:translate etime failed,err:", err)
+		tool.RespInternetError(ctx)
+		return
+	}
+
 	folder, _ := ctx.GetQuery("category")
 
 	str := pwd + "_" + filename + "_" + username + "_" + string(Path) + "_" + folder
 	str = base64.URLEncoding.EncodeToString([]byte(str))
 
+	url := basePath + "encryption/" + str
 	ctx.JSON(http.StatusOK, gin.H{
 		"password": tmp,
-		"path":     basePath + "encryption/" + str,
+		"path":     url,
 	})
+
+	// 写入时间
+	err = service.SetExpirationTime(url, eTime)
+	if err != nil {
+		log.Println("upload:set et failed,err:", err)
+		tool.RespErrorWithDate(ctx, "分享失败,请重试")
+		return
+	}
 }
 
 // qrCode 二维码分享，用了github.com/skip2/go-qrcode包
@@ -66,6 +84,14 @@ func qrCode(ctx *gin.Context) {
 	storagePath, _ := ctx.GetQuery("path")
 	var Path, err = base64.URLEncoding.DecodeString(storagePath)
 
+	et, _ := ctx.GetQuery("time")
+	eTime, err := strconv.Atoi(et)
+	if err != nil {
+		log.Println("upload:translate etime failed,err:", err)
+		tool.RespInternetError(ctx)
+		return
+	}
+
 	ur, err := service.GetUserResource(username, filename, string(Path), folder)
 	if err != nil {
 		if err == redis.Nil {
@@ -77,19 +103,30 @@ func qrCode(ctx *gin.Context) {
 		return
 	}
 
-	var qr *qrcode.QRCode
+	var (
+		qr  *qrcode.QRCode
+		url string
+	)
+
 	switch ur.Permission {
 	case service.Public:
-		qr, err = qrcode.New(basePath+username+"/"+filename+"?path="+storagePath+"&category="+folder, qrcode.Medium)
+		url = basePath + username + "/" + filename + "?path=" + storagePath + "&category=" + folder
 	case service.Private:
 		tool.RespErrorWithDate(ctx, "您设置了仅自己可见，无法分享")
 	case service.Permission:
-		str := basePath + "download/"
-		str += base64.URLEncoding.EncodeToString([]byte(filename + "-" + ur.ResourceName))
-		qr, err = qrcode.New(str, qrcode.Medium)
+		url = basePath + "download/"
+		url += base64.URLEncoding.EncodeToString([]byte(filename + "-" + ur.ResourceName))
 	}
+	qr, err = qrcode.New(url, qrcode.Medium)
 	if err != nil {
 		log.Println(err)
+		return
+	}
+
+	err = service.SetExpirationTime(url, eTime)
+	if err != nil {
+		log.Println("upload:set et failed,err:", err)
+		tool.RespErrorWithDate(ctx, "分享失败,请重试")
 		return
 	}
 
@@ -332,6 +369,20 @@ func downloadFile(ctx *gin.Context, filename, resource string) {
 
 		ctx.Writer.Write(tmp[:n])
 		time.Sleep(1 * time.Millisecond)
+	}
+}
+
+// CheckUrl 检查连接是否过期或是否存在
+func CheckUrl(ctx *gin.Context) {
+	res, err := service.IsOverdue(ctx.Request.RequestURI)
+	if err != nil {
+		log.Println("upload:check due failed,err:", err)
+		return
+	}
+	if !res {
+		tool.RespErrorWithDate(ctx, "链接无效或已过期")
+		ctx.Abort()
+		return
 	}
 }
 
