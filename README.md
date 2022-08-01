@@ -5,7 +5,6 @@
 |-- network-disk
     |-- api
     |   |-- admin.go
-    |   |-- middleware.go
     |   |-- router.go
     |   |-- upload.go
     |   |-- user.go
@@ -15,6 +14,9 @@
     |   |-- dao.go
     |   |-- upload.go
     |   |-- user.go
+    |-- middleware
+    |   |-- cors.go
+    |   |-- jwt.go
     |-- model
     |   |-- user.go
     |-- service

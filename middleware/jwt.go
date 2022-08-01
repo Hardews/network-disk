@@ -1,54 +1,15 @@
-package api
+package middleware
 
 import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
-	"network-disk/service"
 	"network-disk/tool"
 	"strings"
 	"time"
 )
 
-// CheckUrl 检查连接是否过期或是否存在
-func CheckUrl(ctx *gin.Context) {
-	res, err := service.IsOverdue(ctx.Request.RequestURI)
-	if err != nil {
-		log.Println("upload:check due failed,err:", err)
-		return
-	}
-	if !res {
-		tool.RespErrorWithDate(ctx, "链接无效或已过期")
-		ctx.Abort()
-		return
-	}
-}
-
-// Cors 解决跨域问题
-func Cors(c *gin.Context) {
-	method := c.Request.Method
-	if method != "" {
-
-		c.Header("Access-Control-Allow-Origin", c.GetHeader("origin"))
-
-		c.Header("Access-Control-Allow-Methods", "POST, GET, DELETE, PUT")
-
-		c.Header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
-
-		c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Cache-Control, Content-Language, Content-Type")
-
-		c.Header("Access-Control-Allow-Credentials", "true")
-
-	}
-
-	if method == "OPTIONS" {
-		c.AbortWithStatus(http.StatusNoContent)
-	}
-}
-
-// jwt中间件内容
 var jwtKey = []byte("YueJieLY")
 
 type MyClaims struct {

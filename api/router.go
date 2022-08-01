@@ -2,19 +2,20 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"network-disk/middleware"
 )
 
 func InitRouter() {
 	engine := gin.Default()
 
-	engine.Use(Cors)
+	engine.Use(middleware.Cors)
 
 	engine.POST("/login", login)
 	engine.POST("/register", register)
 
 	upload := engine.Group("")
 	{
-		upload.Use(JwtToken)
+		upload.Use(middleware.JwtToken)
 		upload.POST("/upload", uploadFile) // 上传文件
 		upload.DELETE("/upload", delFile)  // 删除文件
 	}
@@ -29,7 +30,7 @@ func InitRouter() {
 
 	user := engine.Group("/user")
 	{
-		user.Use(JwtToken)
+		user.Use(middleware.JwtToken)
 		user.GET("/download/:filename", downloadUserFile)        // 下载用户自己的文件
 		user.GET("/resource/all", getUserAllFile)                // 获取该用户的所有文件信息
 		user.GET("/resource", getUserFileByCategory)             // 根据文件夹路径获取
@@ -41,8 +42,8 @@ func InitRouter() {
 
 	admin := engine.Group("/admin")
 	{
-		admin.Use(JwtToken)
-		admin.Use(AdminToken)
+		admin.Use(middleware.JwtToken)
+		admin.Use(middleware.AdminToken)
 		admin.POST("/register", adminRegister)
 		admin.GET("/resource/all", adminGetUserAllFile) // 获取用户保存的文件
 		admin.PUT("/resource", adminChangeUserFile)     // 修改违禁文件
