@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -113,7 +114,7 @@ func AdminToken(c *gin.Context) {
 	administrator := token.Claims.(*MyClaims).Identity
 
 	if administrator != "管理员" {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusForbidden, gin.H{
 			"msg": "非管理员，无权限操作",
 		})
 		return
