@@ -244,6 +244,7 @@ func downloadPublicFile(ctx *gin.Context) {
 }
 
 func downloadFileByConn(ctx *gin.Context) {
+
 	name := ctx.Param("filename")
 
 	str, err := base64.URLEncoding.DecodeString(name)
@@ -346,6 +347,14 @@ func shareFile(ctx *gin.Context) {
 	var Path, err = base64.URLEncoding.DecodeString(storagePath)
 	// 获取文件夹位置
 	folder, _ := ctx.GetQuery("category")
+	// 获取过期时间
+	et, _ := ctx.GetQuery("time")
+	expirationTime, err := strconv.Atoi(et)
+	if err != nil {
+		log.Println("upload:translate et failed,err:", err)
+		tool.RespInternetError(ctx)
+		return
+	}
 
 	// 获取该用户想分享的资源的信息
 	ur, err := service.GetUserResource(username, filename, string(Path), folder)
@@ -359,18 +368,26 @@ func shareFile(ctx *gin.Context) {
 		return
 	}
 
-	var str string
+	var (
+		str string
+		url string
+	)
 
 	switch ur.Permission {
 	case service.Public:
-		tool.RespSuccessfulWithDate(ctx, basePath+username+"/"+filename+"?path="+storagePath+"&category="+folder)
+		url = basePath + username + "/" + filename + "?path=" + storagePath + "&category=" + folder
 	case service.Private:
 		tool.RespErrorWithDate(ctx, "分享失败，您以将该文件设置为仅自己可见")
 	case service.Permission:
 		// 使人们只能通过分享连接下载的想法是将url进行base64编码
 		str = base64.URLEncoding.EncodeToString([]byte(filename + "-" + ur.ResourceName))
-		tool.RespSuccessfulWithDate(ctx, basePath+"download/"+str)
+		url = basePath + "download/" + str
 	}
+	err = service.SetExpirationTime(url, expirationTime)
+	if err != nil {
+		log.Println("upload:set et failed,err:", err)
+	}
+	tool.RespSuccessfulWithDate(ctx, url)
 }
 
 // uploadFile 上传文件

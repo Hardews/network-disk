@@ -4,6 +4,8 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
+	"github.com/go-redis/redis"
+	"gorm.io/gorm"
 	"io"
 	"io/ioutil"
 	"log"
@@ -31,6 +33,33 @@ var (
 	ErrOfNoKnow     = errors.New("不懂你想干嘛")
 	ErrOfSameName   = errors.New("文件名重复")
 )
+
+func IsOverdue(url string) (bool, error) {
+	_, err := dao.GetUrl(url)
+	if err == nil {
+		return true, nil
+	} else {
+		if err == redis.Nil {
+			err = nil
+		} else {
+			return false, err
+		}
+	}
+
+	err = dao.GetForeverUrl(url)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+func SetExpirationTime(url string, et int) error {
+	return dao.SetExpirationTime(url, et)
+}
 
 func GetUserFileByCategory(username string, category string, Path string) ([]model.UserResources, error) {
 	urs, err := GetAllUserResource(username)

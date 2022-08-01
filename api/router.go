@@ -17,11 +17,16 @@ func InitRouter() {
 	upload := engine.Group("")
 	{
 		upload.Use(middleware.JwtToken)
-		upload.POST("/upload", uploadFile)                           // 上传文件
-		upload.DELETE("/upload", delFile)                            // 删除文件
-		upload.GET("/download/:filename", downloadFileByConn)        // 链接下载
-		upload.GET("/:username/:filename", downloadPublicFile)       // 下载公开的文件
-		upload.POST("/encryption/:filename", downloadEncryptionFile) // 下载加密的文件
+		upload.POST("/upload", uploadFile) // 上传文件
+		upload.DELETE("/upload", delFile)  // 删除文件
+	}
+
+	download := engine.Group("")
+	{
+		download.Use(middleware.CheckUrl)
+		download.GET("/download/:filename", downloadFileByConn)        // 链接下载
+		download.GET("/:username/:filename", downloadPublicFile)       // 下载公开的文件
+		download.POST("/encryption/:filename", downloadEncryptionFile) // 下载加密的文件
 	}
 
 	user := engine.Group("/user")
