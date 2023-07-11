@@ -10,8 +10,13 @@ func InitRouter() {
 
 	engine.Use(middleware.Cors)
 
-	engine.POST("/login", login)
-	engine.POST("/register", register)
+	engine.POST("/token", login) // 获取凭证
+
+	show := engine.Group("/show")
+	{
+		show.GET("/picture") // 图片的展示
+
+	}
 
 	upload := engine.Group("")
 	{
@@ -43,7 +48,6 @@ func InitRouter() {
 	admin := engine.Group("/admin")
 	{
 		admin.Use(middleware.JwtToken)
-		admin.Use(middleware.AdminToken)
 		admin.POST("/register", adminRegister)
 		admin.GET("/resource/all", adminGetUserAllFile) // 获取用户保存的文件
 		admin.PUT("/resource", adminChangeUserFile)     // 修改违禁文件

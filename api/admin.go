@@ -2,11 +2,13 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+
 	"log"
+	"os"
+
 	"network-disk/model"
 	"network-disk/service"
 	"network-disk/tool"
-	"os"
 )
 
 func adminGetUserAllFile(ctx *gin.Context) {

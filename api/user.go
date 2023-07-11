@@ -38,29 +38,3 @@ func login(ctx *gin.Context) {
 
 	tool.RespSuccessfulWithDate(ctx, token)
 }
-func register(ctx *gin.Context) {
-	var user model.User
-	user.Username, _ = ctx.GetPostForm("username")
-	user.Password, _ = ctx.GetPostForm("password")
-	if user.Username == "" {
-		tool.RespErrorWithDate(ctx, "用户名为空")
-		return
-	}
-	if user.Password == "" {
-		tool.RespErrorWithDate(ctx, "密码为空")
-		return
-	}
-
-	res, err := service.Register(user)
-	if !res {
-		log.Println(err)
-		tool.RespInternetError(ctx)
-		return
-	}
-	if err != nil {
-		tool.RespErrorWithDate(ctx, err.Error())
-		return
-	}
-
-	tool.RespSuccessful(ctx)
-}

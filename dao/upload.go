@@ -5,56 +5,88 @@ import (
 	"time"
 )
 
-const basePath = "http://127.0.0.1:8080"
+const (
+	basePath        = "http://127.0.0.1:8080"
+	oneDay          = 1 * 24 * time.Hour
+	sevenDay        = 7 * oneDay
+	foreverFileTime = 10 * 365 * 24 * time.Hour // 10 年
+)
 
-func ResourcesFile(username string, ur model.UserResources) (bool, error) {
+func ResourcesFile(ur model.UserResources) (bool, error) {
+	// mysql
+	err := dB.Create(&ur).Error
+	if err != nil {
+		return false, err
+	}
+
+	// redis
 	key := ur.Path + "&&" + ur.Filename + "&&" + ur.Folder
 	urStr := ur.ResourceName + "&&" + ur.Permission + "&&" + ur.CreateAt + "&&" + ur.DownloadAddr
-	return rdb.HSet("user:"+username, key, urStr).Result()
+	return rdb.HSet("user:"+ur.Username, key, urStr).Result()
 }
 
 func GetUrl(url string) (string, error) {
-	return rdb.Get(basePath + url).Result()
-}
-
-func GetForeverUrl(url string) error {
-	tx := dB.Where("url = ?", url).First(&model.Url{})
-	if err := tx.Error; err != nil {
-		return err
+	res, err := rdb.Get(basePath + url).Result()
+	if res == "" && err != nil {
+		// redis 拿不到就从 mysql 拿
+		var resUrl string
+		err = dB.Model(&model.Url{}).Where("url = ? AND overdue >= ?", url, time.Now()).Scan(&resUrl).Error
+		return resUrl, err
 	}
-	return nil
+	return res, err
 }
 
 func SetExpirationTime(url string, et int) error {
+	var overdueTime time.Duration
 	switch et {
 	case 0:
-		urlS := model.Url{Url: url}
-		tx := dB.Begin()
-
-		dx := tx.Create(&urlS)
-		if err := dx.Error; err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		tx.Commit()
+		overdueTime = foreverFileTime
 	case 1:
-		rdb.Set(url, 1, 1*24*time.Hour)
+		rdb.Set(url, 1, oneDay)
+		overdueTime = oneDay
 	case 7:
-		rdb.Set(url, 7, 7*24*time.Hour)
+		overdueTime = sevenDay
+		rdb.Set(url, 7, sevenDay)
 	}
+
+	urlS := model.Url{Overdue: time.Now().Add(overdueTime), Url: url}
+	tx := dB.Begin()
+
+	dx := tx.Create(&urlS)
+	if err := dx.Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
 	return nil
 }
 
-func DelResourceFile(username, filename, path, folder string) (int64, error) {
-	return rdb.HDel("user:"+username, path+"&&"+filename+"&&"+folder).Result()
+func DelResourceFile(file model.UserResources) (int64, error) {
+	dB.Model(&model.UserResources{}).Delete(&file)
+	return rdb.HDel("user:"+file.Username, file.Path+"&&"+file.Filename+"&&"+file.Folder).Result()
 }
 
-func GetUserAllResource(username string) (map[string]string, error) {
+func DbGetUserAllResource(username string) ([]model.UserResources, error) {
+	var res []model.UserResources
+	err := dB.Model(&model.UserResources{}).Where("username = ?", username).Scan(&res).Error
+	return res, err
+}
+
+func DbGetUserResource(username, filename, path, folder string) (model.UserResources, error) {
+	var res model.UserResources
+	err := dB.Model(&model.UserResources{}).Where("username = ? AND filename = ? AND path = ? AND folder = ?",
+		username, filename, path, folder).Scan(&res).Error
+	return res, err
+}
+
+// redis
+
+func RdbGetUserAllResource(username string) (map[string]string, error) {
 	return rdb.HGetAll("user:" + username).Result()
 }
 
-func GetUserResource(username, filename, path, folder string) (string, error) {
+func RdbGetUserResource(username, filename, path, folder string) (string, error) {
 	return rdb.HGet("user:"+username, path+"&&"+filename+"&&"+folder).Result()
 }
 

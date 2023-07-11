@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var jwtKey = []byte("YueJieLY")
+var jwtKey = []byte("niu_rou_ban_mian")
 
 type MyClaims struct {
 	Username string `json:"username"`
@@ -27,7 +27,7 @@ func SetToken(username, identity string) (string, bool) {
 		jwt.StandardClaims{
 			NotBefore: time.Now().Unix() - 60,
 			ExpiresAt: time.Now().Unix() + 60*60*2,
-			Issuer:    "douBan",
+			Issuer:    "my_network",
 			Subject:   "Hardews",
 		},
 	}
@@ -72,6 +72,7 @@ func JwtToken(c *gin.Context) {
 	//获取token中的字段
 	username := token.Claims.(*MyClaims).Username
 	Time := token.Claims.(*MyClaims).ExpiresAt
+	administrator := token.Claims.(*MyClaims).Identity
 	if Time < time.Now().Unix() {
 		code = "token已过期"
 		c.JSON(200, gin.H{
@@ -95,27 +96,12 @@ func JwtToken(c *gin.Context) {
 		c.Abort()
 		return
 	}
-
-	c.Set("username", username)
-}
-
-func AdminToken(c *gin.Context) {
-	tokenHeader := c.Request.Header.Get("Authorization")
-	token, err := jwt.ParseWithClaims(tokenHeader, &MyClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
-	})
-	if err != nil {
-		tool.RespInternetError(c)
-		fmt.Println("check token failed ,err:", err)
-		return
-	}
-	administrator := token.Claims.(*MyClaims).Identity
-
 	if administrator != "管理员" {
 		c.JSON(http.StatusForbidden, gin.H{
 			"msg": "非管理员，无权限操作",
 		})
 		return
 	}
-	c.Next()
+
+	c.Set("username", username)
 }

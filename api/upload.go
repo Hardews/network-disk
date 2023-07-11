@@ -202,7 +202,9 @@ func updateFileAttribute(ctx *gin.Context) {
 		return
 	}
 
-	res, err := service.UpdateFileAttribute(ur, newVal, username, chose)
+	ur.Username = username
+
+	res, err := service.UpdateFileAttribute(ur, newVal, chose)
 	if err != nil {
 		if err == service.ErrOfSameName {
 			tool.RespErrorWithDate(ctx, err.Error())
@@ -552,6 +554,7 @@ storage:
 	var storagePath = base64.URLEncoding.EncodeToString([]byte(Path))
 	// 在redis中存储的结构
 	var storage = model.UserResources{
+		Username:     username,
 		Folder:       folder,
 		Path:         Path,
 		Filename:     filename,
@@ -561,8 +564,8 @@ storage:
 		CreateAt:     time.Now().String(),
 	}
 
-	// 存储在redis中
-	_, err = service.StorageFile(username, storage)
+	// 存储在 redis, mysql 中
+	_, err = service.StorageFile(storage)
 	if err != nil {
 		log.Println("storage file failed,err:", err)
 		tool.RespInternetError(ctx)
@@ -601,7 +604,7 @@ func getUserFileByCategory(ctx *gin.Context) {
 	tool.RespSuccessfulWithDate(ctx, urs)
 }
 
-// getUserAllFile 获取用户的所有文件
+// getUserAllFile 获取所有文件
 func getUserAllFile(ctx *gin.Context) {
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
