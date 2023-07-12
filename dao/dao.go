@@ -5,6 +5,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
+	"network-disk/config"
+	"network-disk/model"
 )
 
 var (
@@ -13,20 +15,38 @@ var (
 )
 
 func InitDB() {
-	dsn := "root:lmh123@tcp(127.0.0.1:3306)/disk?charset=utf8mb4&parseTime=True&loc=Local"
+	c := config.ReloadConfig
+	var (
+		mysqlUsername = c.MysqlDatabase.Username
+		mysqlPassword = c.MysqlDatabase.Password
+		mysqlLink     = c.DatabaseLink
+		mysqlHost     = c.DatabaseHost
+		mysqlName     = c.DatabaseName
+
+		redisAddr     = c.Address
+		redisPassword = c.RedisDatabase.Password
+		redisDb       = c.RedisDatabase.DB
+	)
+
+	// mysql link
+	dsn := mysqlUsername + ":" + mysqlPassword + "@tcp(" + mysqlLink + ": " + mysqlHost + ")/" + mysqlName + "?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalln("failed to connect database")
 	}
 	dB = db
 
+	dB.AutoMigrate(&model.User{}, &model.AdminUser{}, &model.UserResources{}, &model.Url{})
+
+	// redis link
 	rdb = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "lmh123",
-		DB:       10,
+		Addr:     redisAddr,
+		Password: redisPassword,
+		DB:       redisDb,
 	})
 	_, err = rdb.Ping().Result()
 	if err != nil {
-		log.Fatalln(err)
+		log.Println("failed to connect redis,err:", err)
+		// log.Fatalln("failed to connect redis,err:", err)
 	}
 }

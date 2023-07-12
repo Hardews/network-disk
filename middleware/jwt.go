@@ -27,8 +27,8 @@ func SetToken(username, identity string) (string, bool) {
 		jwt.StandardClaims{
 			NotBefore: time.Now().Unix() - 60,
 			ExpiresAt: time.Now().Unix() + 60*60*2,
-			Issuer:    "my_network",
-			Subject:   "Hardews",
+			Issuer:    "Twentyue",
+			Subject:   "my_network_disk",
 		},
 	}
 

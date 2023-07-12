@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"network-disk/config"
 	"network-disk/middleware"
 
 	"gorm.io/gorm"
@@ -18,6 +19,19 @@ var (
 	ErrOfRepeatAccount = errors.New("账号已存在")
 	ErrOfWrongPassword = errors.New("密码错误")
 )
+
+func InitUser() {
+	c := config.ReloadConfig
+	if c.BaseSetting.Username != "" && c.BaseSetting.Password != "" {
+		register(model.User{
+			Username: c.BaseSetting.Username,
+			Password: c.BaseSetting.Password,
+		})
+		if c.BaseSetting.IsSetAdmin {
+			writeAdmin(c.BaseSetting.Username)
+		}
+	}
+}
 
 func Login(user model.User) (res bool, token string, err error) {
 	res = true
@@ -58,7 +72,7 @@ func Login(user model.User) (res bool, token string, err error) {
 	}
 }
 
-func Register(user model.User) (res bool, err error) {
+func register(user model.User) (res bool, err error) {
 	res = false
 	err, flag := CheckUsername(user)
 	if err != nil {

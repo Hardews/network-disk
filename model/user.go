@@ -12,7 +12,7 @@ type User struct {
 }
 
 type AdminUser struct {
-	Uid      int    `gorm:"primaryKey;AUTO_INCREMENT=1;not null"`
+	gorm.Model
 	Username string `gorm:"not null;unique;type:varchar(20)"`
 }
 

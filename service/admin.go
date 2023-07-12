@@ -18,6 +18,6 @@ func IsAdminUser(username string) (err error, res bool) {
 	return nil, true
 }
 
-func WriteAdmin(username string) error {
+func writeAdmin(username string) error {
 	return dao.WriteAdmin(username)
 }

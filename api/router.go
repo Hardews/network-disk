@@ -14,8 +14,8 @@ func InitRouter() {
 
 	show := engine.Group("/show")
 	{
-		show.GET("/picture") // 图片的展示
-
+		show.GET("/picture", ShowPicture) // 图片的展示
+		show.GET("/txt", ShowTxt)         // 文本类文件的展示
 	}
 
 	upload := engine.Group("")
@@ -33,7 +33,7 @@ func InitRouter() {
 		download.POST("/encryption/:filename", downloadEncryptionFile) // 下载加密的文件
 	}
 
-	user := engine.Group("/user")
+	user := engine.Group("/posts")
 	{
 		user.Use(middleware.JwtToken)
 		user.GET("/download/:filename", downloadUserFile)        // 下载用户自己的文件
@@ -48,7 +48,6 @@ func InitRouter() {
 	admin := engine.Group("/admin")
 	{
 		admin.Use(middleware.JwtToken)
-		admin.POST("/register", adminRegister)
 		admin.GET("/resource/all", adminGetUserAllFile) // 获取用户保存的文件
 		admin.PUT("/resource", adminChangeUserFile)     // 修改违禁文件
 	}

@@ -9,6 +9,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	golang.org/x/crypto v0.11.0
+	gopkg.in/yaml.v2 v2.3.0
 	gorm.io/driver/mysql v1.5.1
 	gorm.io/gorm v1.25.2
 )
@@ -36,6 +37,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
+	github.com/zwgblue/yaml-encoder v0.0.0-20221226083717-a0bdbda0d998 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect

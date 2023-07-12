@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 
-	"network-disk/model"
 	"network-disk/service"
 	"network-disk/tool"
 )
@@ -78,38 +77,4 @@ func adminChangeUserFile(ctx *gin.Context) {
 		tool.RespInternetError(ctx)
 		return
 	}
-}
-
-func adminRegister(ctx *gin.Context) {
-	var user model.User
-	user.Username, _ = ctx.GetPostForm("username")
-	user.Password, _ = ctx.GetPostForm("password")
-	if user.Username == "" {
-		tool.RespErrorWithDate(ctx, "用户名为空")
-		return
-	}
-	if user.Password == "" {
-		tool.RespErrorWithDate(ctx, "密码为空")
-		return
-	}
-
-	res, err := service.Register(user)
-	if !res {
-		log.Println(err)
-		tool.RespInternetError(ctx)
-		return
-	}
-	if err != nil {
-		tool.RespErrorWithDate(ctx, err.Error())
-		return
-	}
-
-	err = service.WriteAdmin(user.Username)
-	if err != nil {
-		log.Println("admin:write admin failed,err:", err)
-		tool.RespInternetError(ctx)
-		return
-	}
-
-	tool.RespSuccessful(ctx)
 }
