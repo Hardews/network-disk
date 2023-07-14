@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"network-disk/config"
 	"network-disk/middleware"
-	"strings"
 )
 
 func InitRouter() {
@@ -66,12 +65,8 @@ func InitRouter() {
 	*/
 
 	var host string
-	if config.ReloadConfig.BaseUrl != "" {
-		arr := strings.Split(config.ReloadConfig.BaseUrl, ":")
-		host = ":" + arr[1]
-	}
-	if host == "" {
-		host = ":8080"
+	if config.ReloadConfig.Host != "" {
+		host = ":" + config.ReloadConfig.Host
 	}
 	engine.Run(host)
 }
