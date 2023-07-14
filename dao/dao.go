@@ -36,7 +36,7 @@ func InitDB() {
 	}
 	dB = db
 
-	dB.AutoMigrate(&model.User{}, &model.AdminUser{}, &model.UserResources{}, &model.Url{})
+	dB.AutoMigrate(&model.Url{}, &model.UserResources{}, &model.Resource{}, &model.User{}, &model.Folder{}, &model.AdminUser{}, &model.Code{})
 
 	// redis link
 	rdb = redis.NewClient(&redis.Options{
