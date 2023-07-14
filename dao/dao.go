@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"fmt"
 	"github.com/go-redis/redis"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -29,7 +30,8 @@ func InitDB() {
 	)
 
 	// mysql link
-	dsn := mysqlUsername + ":" + mysqlPassword + "@tcp(" + mysqlLink + ": " + mysqlHost + ")/" + mysqlName + "?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := mysqlUsername + ":" + mysqlPassword + "@tcp(" + mysqlLink + ":" + mysqlHost + ")/" + mysqlName + "?charset=utf8mb4&parseTime=True&loc=Local"
+	fmt.Println(dsn)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalln("failed to connect database")
