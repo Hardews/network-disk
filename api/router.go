@@ -12,12 +12,6 @@ func InitRouter() {
 
 	engine.POST("/token", login) // 获取凭证
 
-	show := engine.Group("/show")
-	{
-		show.GET("/picture", ShowPicture) // 图片的展示
-		show.GET("/txt", ShowTxt)         // 文本类文件的展示
-	}
-
 	upload := engine.Group("")
 	{
 		upload.Use(middleware.JwtToken)
