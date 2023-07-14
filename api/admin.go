@@ -1,15 +1,6 @@
 package api
 
-import (
-	"github.com/gin-gonic/gin"
-
-	"log"
-	"os"
-
-	"network-disk/service"
-	"network-disk/tool"
-)
-
+/*
 func adminGetUserAllFile(ctx *gin.Context) {
 	username, res := ctx.GetQuery("username")
 	if !res {
@@ -29,33 +20,20 @@ func adminGetUserAllFile(ctx *gin.Context) {
 
 // adminChangeUserFile 修改用户的文件内容(把违规的文件改为特定的文件)
 func adminChangeUserFile(ctx *gin.Context) {
-	changeFile, err := ctx.FormFile("file")
+	filename, res := ctx.GetQuery("filename")
+	if !res {
+		tool.RespSuccessfulWithDate(ctx, "filename is null")
+		return
+	}
+
+	folder, _ := ctx.GetQuery("folder")
+	folderId, err := strconv.Atoi(folder)
 	if err != nil {
-		log.Println("admin:change file failed,err:", err)
-		tool.RespInternetError(ctx)
-		return
-	}
-	// 获取文件名
-	filename := ctx.PostForm("filename")
-
-	// 获取用户名
-	username := ctx.PostForm("username")
-
-	// 获取存储的文件夹
-	folder := ctx.PostForm("category")
-	if folder == "" {
-		tool.RespErrorWithDate(ctx, "未指定文件夹")
+		tool.RespSuccessfulWithDate(ctx, "folder id 格式错误")
 		return
 	}
 
-	// 获取存储的路径
-	Path := ctx.PostForm("path")
-	if Path == "" {
-		tool.RespErrorWithDate(ctx, "未指定路径")
-		return
-	}
-
-	ur, err := service.GetUserResource(username, filename, Path, folder)
+	ur, err := service.GetUserResource(filename, folderId)
 	if err != nil {
 		log.Println("admin:get file info failed,err:", err)
 		tool.RespInternetError(ctx)
@@ -63,18 +41,12 @@ func adminChangeUserFile(ctx *gin.Context) {
 	}
 
 	// 删除用户原来的文件
-	err = os.Remove(ur.ResourceName)
+	err = os.Remove("./uploadFile/" + service.GetResourceName(int(ur.ResourceId)))
 	if err != nil {
 		log.Println("admin:remove the file failed,err:", err)
 		tool.RespInternetError(ctx)
 		return
 	}
-
-	// 按源路径保存要更换的文件
-	err = ctx.SaveUploadedFile(changeFile, ur.ResourceName)
-	if err != nil {
-		log.Println("admin:save the file failed,err:", err)
-		tool.RespInternetError(ctx)
-		return
-	}
 }
+
+*/

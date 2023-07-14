@@ -22,29 +22,46 @@ func InitRouter() {
 	download := engine.Group("")
 	{
 		download.Use(CheckUrl)
-		download.GET("/download/:filename", downloadFileByConn)        // 链接下载
-		download.GET("/:username/:filename", downloadPublicFile)       // 下载公开的文件
-		download.POST("/encryption/:filename", downloadEncryptionFile) // 下载加密的文件
+		// 下载 baseUrl/download?encryption=bool&folder=?&filename=?
+		download.GET("/download", downloadFileByConn)
 	}
 
 	user := engine.Group("/posts")
 	{
 		user.Use(middleware.JwtToken)
-		user.GET("/download/:filename", downloadUserFile)        // 下载用户自己的文件
-		user.GET("/resource/all", getUserAllFile)                // 获取该用户的所有文件信息
-		user.GET("/resource", getUserFileByCategory)             // 根据文件夹路径获取
-		user.PUT("/resource", updateFileAttribute)               // 修改文件名或存储路径
-		user.GET("/share/normal/:filename", shareFile)           // 正常分享文件
-		user.GET("/share/QrCode/:filename", qrCode)              // 二维码分享
-		user.GET("/share/encryption/:filename", encryptionShare) // 加密分享
+		user.GET("/download/:folderId", downloadUserFile) // 下载用户自己的文件
+
+		folder := user.Group("/folder")
+		{
+			folder.GET("", getFolderInfo) // 获取该用户所有文件夹信息
+			folder.POST("", addFolder)    // 添加文件夹
+		}
+
+		resource := user.Group("/resource")
+		{
+			resource.GET("/all", getUserAllFile)    // 获取该用户的所有文件信息
+			resource.GET("", getUserFileByCategory) // 根据文件夹路径获取
+			// resource.PUT("", updateFileAttribute)   // 修改文件名或存储路径 TODO 待开发
+		}
+
+		share := user.Group("/share")
+		{
+			share.GET("/normal", shareFile)           // 正常分享文件
+			share.GET("/QrCode", qrCode)              // 二维码分享
+			share.GET("/encryption", encryptionShare) // 加密分享
+		}
 	}
 
-	admin := engine.Group("/admin")
-	{
-		admin.Use(middleware.JwtToken)
-		admin.GET("/resource/all", adminGetUserAllFile) // 获取用户保存的文件
-		admin.PUT("/resource", adminChangeUserFile)     // 修改违禁文件
-	}
+	/*
+		弃用，（只有自己用）
+		admin := engine.Group("/admin")
+		{
+			admin.Use(middleware.JwtToken)
+			admin.GET("/resource/all", adminGetUserAllFile) // 获取用户保存的文件
+			admin.PUT("/resource", adminChangeUserFile)     // 修改违禁文件
+		}
+
+	*/
 
 	engine.Run()
 }

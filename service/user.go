@@ -20,6 +20,10 @@ var (
 	ErrOfWrongPassword = errors.New("密码错误")
 )
 
+func GetUsernameByFolderId(folderId uint) string {
+	return dao.GetUsernameByFolderId(folderId)
+}
+
 func InitUser() {
 	c := config.ReloadConfig
 	if c.BaseSetting.Username != "" && c.BaseSetting.Password != "" {
