@@ -6,11 +6,11 @@ import (
 
 type User struct {
 	gorm.Model
-	Username string `gorm:"not null;unique;type:varchar(20)"`
-	Password string `gorm:"type:varchar(100)"`
+	Username string `gorm:"not null;type:varchar(20)"`
+	Password string `gorm:"type:varchar(255)"`
 }
 
 type AdminUser struct {
 	gorm.Model
-	Username string `gorm:"not null;unique;type:varchar(20)"`
+	Username string
 }

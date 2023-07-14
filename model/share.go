@@ -14,7 +14,7 @@ import (
 type Url struct {
 	gorm.Model
 	Overdue time.Time
-	Url     string `gorm:"not null;unique;type:varchar(200)"`
+	Url     string `gorm:"not null;type:varchar(200)"`
 }
 
 type Code struct {
