@@ -2,7 +2,9 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"network-disk/config"
 	"network-disk/middleware"
+	"strings"
 )
 
 func InitRouter() {
@@ -63,5 +65,13 @@ func InitRouter() {
 
 	*/
 
-	engine.Run()
+	var host string
+	if config.ReloadConfig.BaseUrl != "" {
+		arr := strings.Split(config.ReloadConfig.BaseUrl, ":")
+		host = ":" + arr[1]
+	}
+	if host == "" {
+		host = ":8080"
+	}
+	engine.Run(host)
 }
