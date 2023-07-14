@@ -54,6 +54,7 @@ func GenerateConfigFile() {
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			log.Println("配置文件不存在...\n已自动生成，请填写后再次启动")
+			err = nil
 			file, err = os.Create("./config/config.yaml")
 			if err != nil {
 				log.Println("未知错误， err:", err)
