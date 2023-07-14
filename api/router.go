@@ -64,7 +64,7 @@ func InitRouter() {
 
 	*/
 
-	var host string
+	var host string = ":8080"
 	if config.ReloadConfig.Host != "" {
 		host = ":" + config.ReloadConfig.Host
 	}
