@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 	"io/fs"
 	"log"
+	"network-disk/config"
 	"os"
 	"path"
 	"strconv"
@@ -18,7 +19,7 @@ import (
 	"github.com/go-redis/redis"
 )
 
-const basePath = "http://127.0.0.1:8080/"
+var basePath = config.ReloadConfig.BaseUrl + "/"
 
 func delFile(ctx *gin.Context) {
 	filename := ctx.PostForm("filename")
