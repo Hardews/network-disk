@@ -107,10 +107,10 @@ func RdbGetUserResource(filename string, folderId int) (string, error) {
 // ResourceIncr 记录资源数++，当没人拥有这个文件时删除
 func ResourceIncr(resourceId uint) (int64, error) {
 	var nowNum int64
-	dB.Model(&model.Resource{}).Select("resource_nums").Where("id = ?", resourceId).Scan(&nowNum)
+	dB.Model(&model.Resource{}).Select("resource_num").Where("id = ?", resourceId).Scan(&nowNum)
 	if nowNum != 0 {
 		nowNum++
-		err := dB.Model(&model.Resource{}).Where("id = ?", resourceId).Update("resource_nums", nowNum).Error
+		err := dB.Model(&model.Resource{}).Where("id = ?", resourceId).Update("resource_num", nowNum).Error
 		if err != nil {
 			return -1, err
 		}
@@ -130,10 +130,10 @@ func ResourceIncr(resourceId uint) (int64, error) {
 
 func ResourceDecr(resourceId uint) (int64, error) {
 	var nowNum int64
-	dB.Model(&model.Resource{}).Select("resource_nums").Where("id = ?", resourceId).Scan(&nowNum)
+	dB.Model(&model.Resource{}).Select("resource_num").Where("id = ?", resourceId).Scan(&nowNum)
 	if nowNum != 0 {
 		nowNum--
-		err := dB.Model(&model.Resource{}).Where("id = ?", resourceId).Update("resource_nums", nowNum).Error
+		err := dB.Model(&model.Resource{}).Where("id = ?", resourceId).Update("resource_num", nowNum).Error
 		if err != nil {
 			return -1, err
 		}
