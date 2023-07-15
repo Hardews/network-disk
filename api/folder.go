@@ -55,7 +55,7 @@ func addFolder(ctx *gin.Context) {
 	id, err := service.CreateFolder(model.Folder{
 		Username:     username,
 		FolderName:   folderName,
-		ParentFolder: uint(parentId),
+		ParentFolder: parentId,
 	})
 	if err != nil {
 		log.Println("create folder err:", err)
