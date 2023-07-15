@@ -6,7 +6,9 @@
 
 package dao
 
-import "network-disk/model"
+import (
+	"network-disk/model"
+)
 
 func GetUsernameByFolderId(folderId uint) string {
 	// 获取用户名
@@ -17,6 +19,15 @@ func GetUsernameByFolderId(folderId uint) string {
 
 func CreateFolder(folder model.Folder) (uint, error) {
 	err := dB.Create(&folder).Error
+	if err != nil {
+		return 0, err
+	}
+	err = dB.Create(&model.UserResources{
+		FolderId:   uint(folder.ParentFolder),
+		ResourceId: 0,
+		Filename:   "folder",
+		Permission: "folder",
+	}).Error
 	if err != nil {
 		return 0, err
 	}
