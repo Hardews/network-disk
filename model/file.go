@@ -27,5 +27,5 @@ type Folder struct {
 	gorm.Model
 	Username     string // 谁创建的这个文件夹
 	FolderName   string // 这个文件夹名称
-	ParentFolder uint   // 父文件夹 id
+	ParentFolder int    // 父文件夹 id
 }
