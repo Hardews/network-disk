@@ -197,7 +197,11 @@ storage:
 // getUserFileByCategory 获取指定路径的文件
 func getUserFileByCategory(ctx *gin.Context) {
 	// 获取存储的文件夹 id
-	iFolderId := ctx.PostForm("folder_id")
+	iFolderId, exists := ctx.GetQuery("folder_id")
+	if !exists {
+		tool.RespSuccessfulWithDate(ctx, "传参错误")
+		return
+	}
 	folderId, err := strconv.Atoi(iFolderId)
 	if err != nil {
 		tool.RespErrorWithDate(ctx, "传参错误")
