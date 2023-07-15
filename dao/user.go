@@ -2,7 +2,6 @@ package dao
 
 import (
 	_ "github.com/go-sql-driver/mysql"
-
 	"network-disk/model"
 )
 
@@ -49,12 +48,18 @@ func CheckUsername(user model.User) error {
 
 func WriteIn(user model.User) error {
 	tx := dB.Begin()
+	defer tx.Rollback()
 
-	dx := tx.Create(&user)
-	if err := dx.Error; err != nil {
-		tx.Rollback()
+	err := tx.Create(&user).Error
+	if err != nil {
 		return err
 	}
+
+	err = tx.Create(&model.Folder{
+		Username:     user.Username,
+		FolderName:   "主文件夹",
+		ParentFolder: -1,
+	}).Error
 
 	tx.Commit()
 
