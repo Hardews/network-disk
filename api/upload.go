@@ -104,7 +104,7 @@ func uploadFile(ctx *gin.Context) {
 
 	// 预处理文件
 	res, resourceName, err := service.DealWithFile(file)
-	if !res {
+	if !res && err != nil {
 		log.Println(err)
 		tool.RespInternetError(ctx)
 		return

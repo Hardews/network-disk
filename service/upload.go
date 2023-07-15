@@ -138,7 +138,8 @@ func Storage(file *multipart.FileHeader, resourceName, breakPointPath string, br
 		//  log.Fatal("模拟上传中断")
 		//}
 	}
-	return nil
+	// 到这里时上传结束了，更新 resource 表
+	return dao.CreateANewResource(resourceName)
 }
 
 // DealWithFile 对文件预处理
