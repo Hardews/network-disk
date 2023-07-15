@@ -14,7 +14,7 @@ import (
 func CreateANewResource(resourceName string) error {
 	return dB.Create(&model.Resource{
 		ResourceName: resourceName,
-		ResourceNum:  1,
+		ResourceNum:  0,
 	}).Error
 }
 
