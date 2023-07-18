@@ -13,6 +13,12 @@ func InitRouter() {
 
 	engine.POST("/token", login) // 获取凭证
 
+	show := engine.Group("/show")
+	{
+		show.Use(middleware.JwtToken)
+		show.GET("/pic", showPicture)
+	}
+
 	upload := engine.Group("")
 	{
 		upload.Use(middleware.JwtToken)
