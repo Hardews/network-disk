@@ -9,23 +9,23 @@ package model
 import "gorm.io/gorm"
 
 type Resource struct {
-	gorm.Model
-	ResourceName string // 资源名称
-	ResourceNum  int    // 多少用户拥有该资源
+	gorm.Model   `json:"base_info,omitempty" `
+	ResourceName string `json:"resource_name,omitempty"` // 资源名称
+	ResourceNum  int    `json:"resource_num,omitempty"`  // 多少用户拥有该资源
 }
 
 type UserResources struct {
-	gorm.Model
-	FolderId     uint   // 外键，目标表 Folder
-	ResourceId   uint   // 外键，目标表 Resource
-	Filename     string // 展示的文件名称
-	Permission   string // 权限
-	DownloadAddr string // 下载地址
+	gorm.Model   `json:"base_info,omitempty"`
+	FolderId     uint   `json:"folder_id,omitempty"`     // 外键，目标表 Folder
+	ResourceId   uint   `json:"resource_id,omitempty"`   // 外键，目标表 Resource
+	Filename     string `json:"filename,omitempty"`      // 展示的文件名称
+	Permission   string `json:"permission,omitempty"`    // 权限
+	DownloadAddr string `json:"download_addr,omitempty"` // 下载地址
 }
 
 type Folder struct {
-	gorm.Model
-	Username     string // 谁创建的这个文件夹
-	FolderName   string // 这个文件夹名称
-	ParentFolder int    // 父文件夹 id
+	gorm.Model   `json:"base_info,omitempty"`
+	Username     string `json:"username"`      // 谁创建的这个文件夹
+	FolderName   string `json:"folder_name"`   // 这个文件夹名称
+	ParentFolder int    `json:"parent_folder"` // 父文件夹 id
 }

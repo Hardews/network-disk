@@ -12,13 +12,13 @@ import (
 )
 
 type Url struct {
-	gorm.Model
-	Overdue time.Time
-	Url     string `gorm:"not null;type:varchar(200)"`
+	gorm.Model `json:"base_info,omitempty"`
+	Overdue    time.Time `json:"overdue,omitempty"`
+	Url        string    `gorm:"not null;type:varchar(200)"`
 }
 
 type Code struct {
-	gorm.Model
-	Url  string
-	Code string
+	gorm.Model `json:"base_info,omitempty"`
+	Url        string
+	Code       string
 }
