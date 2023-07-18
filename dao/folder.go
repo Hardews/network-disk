@@ -18,6 +18,13 @@ func GetUsernameByFolderId(folderId uint) string {
 }
 
 func CreateFolder(folder model.Folder) (uint, error) {
+	// 需要看看这个文件夹名字有没有出现
+	var isFolderRepeat string
+	dB.Model(&model.Folder{}).Select("folder_name").Where("username = ? and folder_name = ?",
+		folder.Username, folder.FolderName).Scan(&isFolderRepeat)
+	if isFolderRepeat == folder.FolderName {
+		folder.FolderName = folder.FolderName + "_副本"
+	}
 	err := dB.Create(&folder).Error
 	if err != nil {
 		return 0, err

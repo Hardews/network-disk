@@ -61,7 +61,6 @@ func InitRouter() {
 			admin.GET("/resource/all", adminGetUserAllFile) // 获取用户保存的文件
 			admin.PUT("/resource", adminChangeUserFile)     // 修改违禁文件
 		}
-
 	*/
 
 	var host string = ":8080"
