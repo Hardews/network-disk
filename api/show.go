@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
 	"gorm.io/gorm"
+	"io"
 	"log"
 	"network-disk/service"
 	"network-disk/tool"
@@ -89,6 +90,9 @@ func showPicture(ctx *gin.Context) {
 		var temp = make([]byte, 1024)
 		n, err := picFile.Read(temp)
 		if err != nil {
+			if err == io.EOF {
+				break
+			}
 			log.Println("read user resource error,err:", err)
 			tool.RespInternetError(ctx)
 			return
