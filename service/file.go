@@ -49,7 +49,7 @@ func DelFile(folderId int, filename string) (err error) {
 	if n == 0 {
 		// 没有人存储这个文件了，删除
 		ResourceName := dao.GetResourceInfo(ResourceId)
-		err = os.Remove(bathPath + ResourceName)
+		err = os.Remove(ResourceName)
 		if err != nil {
 			return
 		}
