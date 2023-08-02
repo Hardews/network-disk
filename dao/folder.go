@@ -23,8 +23,11 @@ func CreateFolder(folder model.Folder) (uint, error) {
 	dB.Model(&model.Folder{}).Select("folder_name").Where("username = ? and folder_name = ?",
 		folder.Username, folder.FolderName).Scan(&isFolderRepeat)
 	// 一致则加个副本字段
-	if isFolderRepeat == folder.FolderName {
+	for isFolderRepeat == folder.FolderName {
 		folder.FolderName = folder.FolderName + "_副本"
+		// 加了副本字段后再次查询
+		dB.Model(&model.Folder{}).Select("folder_name").Where("username = ? and folder_name = ?",
+			folder.Username, folder.FolderName).Scan(&isFolderRepeat)
 	}
 
 	// Mysql 插入数据
