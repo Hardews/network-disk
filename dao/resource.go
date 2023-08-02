@@ -8,7 +8,6 @@ package dao
 
 import (
 	"network-disk/model"
-	"strconv"
 )
 
 func CreateANewResource(resourceName string) error {
@@ -25,24 +24,11 @@ func ResourcesFile(ur model.UserResources) (bool, error) {
 		return false, err
 	}
 
-	username := GetUsernameByFolderId(ur.FolderId)
-
-	/*
-	 redis
-	 哈希组名称 ： user:userId
-	 key : folderID + 文件名称
-	 val ：resourceId + 权限 + 下载地址
-	*/
-	key := strconv.Itoa(int(ur.FolderId)) + ":" + ur.Filename
-	urStr := strconv.Itoa(int(ur.ResourceId)) + "&&" + ur.Permission + "&&" + ur.DownloadAddr
-	return rdb.HSet(redisStoragePrefix+username, key, urStr).Result()
+	return true, err
 }
 
-func DelResourceFile(file model.UserResources) (int64, error) {
-	dB.Model(&model.UserResources{}).Delete(&file)
-	hashKey := redisStoragePrefix + GetUsernameByFolderId(file.FolderId)
-	key := strconv.Itoa(int(file.FolderId)) + file.Filename
-	return rdb.HDel(hashKey, key).Result()
+func DelResourceFile(file model.UserResources) error {
+	return dB.Model(&model.UserResources{}).Delete(&file).Error
 }
 
 func GetResourceId(resourceName string) uint {
@@ -92,18 +78,6 @@ func GetResourceInfo(resourceId int) string {
 	return res
 }
 
-// redis
-
-func RdbGetUserAllResource(username string) (map[string]string, error) {
-	return rdb.HGetAll(redisStoragePrefix + username).Result()
-}
-
-func RdbGetUserResource(filename string, folderId int) (string, error) {
-	key := redisStoragePrefix + GetUsernameByFolderId(uint(folderId))
-	val := strconv.Itoa(folderId) + ":" + filename
-	return rdb.HGet(key, val).Result()
-}
-
 // ResourceIncr 记录资源数++，当没人拥有这个文件时删除
 func ResourceIncr(resourceId uint) (int64, error) {
 	var nowNum int64
@@ -115,17 +89,7 @@ func ResourceIncr(resourceId uint) (int64, error) {
 			return -1, err
 		}
 	}
-	// 更新 redis 并处理数据一致性的问题
-	resNum, err := rdb.Incr(strconv.Itoa(int(resourceId))).Result()
-	if err != nil {
-		return -1, err
-	}
-
-	if resNum != nowNum {
-		// 以 mysql 的为准
-		rdb.Set(strconv.Itoa(int(resourceId)), nowNum, -1)
-	}
-	return nowNum, err
+	return nowNum, nil
 }
 
 func ResourceDecr(resourceId uint) (int64, error) {
@@ -138,15 +102,6 @@ func ResourceDecr(resourceId uint) (int64, error) {
 			return -1, err
 		}
 	}
-	// 更新 redis 并处理数据一致性的问题
-	resNum, err := rdb.Decr(strconv.Itoa(int(resourceId))).Result()
-	if err != nil {
-		return -1, err
-	}
 
-	if resNum != nowNum {
-		// 以 mysql 的为准
-		rdb.Set(strconv.Itoa(int(resourceId)), nowNum, -1)
-	}
-	return nowNum, err
+	return nowNum, nil
 }

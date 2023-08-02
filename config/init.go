@@ -21,7 +21,6 @@ var ReloadConfig Config
 type Config struct {
 	BaseSetting   `yaml:"base-setting" comment:"一些基础字段"`
 	MysqlDatabase `yaml:"mysql" comment:"Mysql 数据库配置"`
-	RedisDatabase `yaml:"redis" comment:"Redis 数据库配置"`
 }
 
 type BaseSetting struct {
@@ -40,12 +39,6 @@ type MysqlDatabase struct {
 	DatabaseLink string `yaml:"database-link"`
 	DatabaseHost string `yaml:"database-host"`
 	DatabaseName string `yaml:"database-name"`
-}
-
-type RedisDatabase struct {
-	Address  string
-	Password string
-	DB       int
 }
 
 func GenerateConfigFile() {
@@ -71,9 +64,6 @@ func GenerateConfigFile() {
 					Username:     "root",
 					DatabaseHost: "3306",
 					DatabaseName: "disk",
-				},
-				RedisDatabase: RedisDatabase{
-					DB: 0,
 				},
 			}
 			newEncoder := encoder.NewEncoder(config, encoder.WithComments(encoder.CommentsOnHead))

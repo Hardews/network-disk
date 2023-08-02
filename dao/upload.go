@@ -14,13 +14,8 @@ const (
 )
 
 func GetUrl(url string) (string, error) {
-	res, err := rdb.Get(basePath + url).Result()
-	if res == "" && err != nil {
-		// redis 拿不到(不存在或过期）就从 mysql 拿
-		var resUrl string
-		err = dB.Model(&model.Url{}).Where("url = ? AND overdue >= ?", url, time.Now()).Scan(&resUrl).Error
-		return resUrl, err
-	}
+	var res string
+	err := dB.Model(&model.Url{}).Where("url = ? AND overdue >= ?", url, time.Now()).Scan(&res).Error
 	return res, err
 }
 
@@ -30,18 +25,8 @@ func SetExpirationTime(url string, et int, code ...string) error {
 	case 0:
 		overdueTime = foreverFileTime
 	case 1:
-		if len(code) != 0 {
-			rdb.Set(url, code[0], oneDay)
-		} else {
-			rdb.Set(url, 1, oneDay)
-		}
 		overdueTime = oneDay
 	case 7:
-		if len(code) != 0 {
-			rdb.Set(url, code[0], sevenDay)
-		} else {
-			rdb.Set(url, 7, sevenDay)
-		}
 		overdueTime = sevenDay
 	}
 

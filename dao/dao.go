@@ -2,7 +2,6 @@ package dao
 
 import (
 	"fmt"
-	"github.com/go-redis/redis"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
@@ -11,8 +10,7 @@ import (
 )
 
 var (
-	dB  *gorm.DB
-	rdb *redis.Client
+	dB *gorm.DB
 )
 
 func InitDB() {
@@ -23,10 +21,6 @@ func InitDB() {
 		mysqlLink     = c.DatabaseLink
 		mysqlHost     = c.DatabaseHost
 		mysqlName     = c.DatabaseName
-
-		redisAddr     = c.Address
-		redisPassword = c.RedisDatabase.Password
-		redisDb       = c.RedisDatabase.DB
 	)
 
 	// mysql link
@@ -39,16 +33,4 @@ func InitDB() {
 	dB = db
 
 	dB.AutoMigrate(&model.Url{}, &model.UserResources{}, &model.Resource{}, &model.User{}, &model.Folder{}, &model.AdminUser{}, &model.Code{})
-
-	// redis link
-	rdb = redis.NewClient(&redis.Options{
-		Addr:     redisAddr,
-		Password: redisPassword,
-		DB:       redisDb,
-	})
-	_, err = rdb.Ping().Result()
-	if err != nil {
-		log.Println("failed to connect redis,err:", err)
-		// log.Fatalln("failed to connect redis,err:", err)
-	}
 }

@@ -8,7 +8,6 @@ package dao
 
 import (
 	"network-disk/model"
-	"strconv"
 )
 
 func GetUsernameByFolderId(folderId uint) string {
@@ -53,11 +52,6 @@ func CreateFolder(folder model.Folder) (uint, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	// Redis 更新
-	key := strconv.Itoa(folder.ParentFolder) + ":folder"
-	urStr := "0&&0&&null"
-	_, err = rdb.HSet(redisStoragePrefix+folder.Username, key, urStr).Result()
 
 	return folderId, err
 }
