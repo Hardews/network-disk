@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"gorm.io/gorm"
 	"io/fs"
 	"log"
@@ -34,7 +35,7 @@ func delFile(ctx *gin.Context) {
 
 	err = service.DelFile(folderId, filename)
 	if err != nil {
-		if errors.Is(err, redis.Nil) || errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, redis.Nil) || errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, os.ErrNotExist) {
 			tool.RespErrorWithDate(ctx, "没有该文件")
 			return
 		}
@@ -173,7 +174,7 @@ storage:
 	}
 
 	// 获取对应 resource 的 id
-
+	fmt.Println(resourceName)
 	// 在数据库中存储的结构
 	var storage = model.UserResources{
 		FolderId:     uint(folderId),

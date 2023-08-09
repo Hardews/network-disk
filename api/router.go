@@ -15,7 +15,6 @@ func InitRouter() {
 
 	show := engine.Group("/show")
 	{
-		show.Use(middleware.JwtToken)
 		show.GET("/pic", showPicture)
 	}
 
@@ -59,17 +58,7 @@ func InitRouter() {
 		}
 	}
 
-	/*
-		弃用，（只有自己用）
-		admin := engine.Group("/admin")
-		{
-			admin.Use(middleware.JwtToken)
-			admin.GET("/resource/all", adminGetUserAllFile) // 获取用户保存的文件
-			admin.PUT("/resource", adminChangeUserFile)     // 修改违禁文件
-		}
-	*/
-
-	var host string = ":8080"
+	var host = ":8080"
 	if config.ReloadConfig.Host != "" {
 		host = ":" + config.ReloadConfig.Host
 	}

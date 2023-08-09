@@ -20,7 +20,6 @@ import (
 // DelFile 删除文件
 func DelFile(folderId int, filename string) (err error) {
 	var ResourceId int
-	// 去 mysql 拿
 	res, err := dao.DbGetUserResource(filename, folderId)
 	if res.Filename == "" || err != nil {
 		// mysql 也没拿到
