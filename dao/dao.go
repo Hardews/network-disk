@@ -7,6 +7,7 @@ import (
 	"log"
 	"network-disk/config"
 	"network-disk/model"
+	"time"
 )
 
 var (
@@ -33,4 +34,14 @@ func InitDB() {
 	dB = db
 
 	dB.AutoMigrate(&model.Url{}, &model.UserResources{}, &model.Resource{}, &model.User{}, &model.Folder{}, &model.AdminUser{}, &model.Code{})
+
+	// 创建文件夹的记录
+	dB.Create(&model.Resource{
+		Model: gorm.Model{
+			ID:        0,
+			CreatedAt: time.Now(),
+		},
+		ResourceName: "folder_link",
+		ResourceNum:  0,
+	})
 }

@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	mainFolder         = "主文件夹"
 	ErrOfInternet      = errors.New("internet error")
 	ErrOfNoAccount     = errors.New("账号不存在")
 	ErrOfRepeatAccount = errors.New("账号已存在")
@@ -31,7 +32,8 @@ func InitUser() {
 			Username: c.BaseSetting.Username,
 			Password: c.BaseSetting.Password,
 		})
-		if c.BaseSetting.IsSetAdmin {
+		_, flag := CheckUsername(model.User{Username: c.BaseSetting.Username})
+		if flag && c.BaseSetting.IsSetAdmin {
 			writeAdmin(c.BaseSetting.Username)
 		}
 	}
@@ -94,11 +96,18 @@ func register(user model.User) (res bool, err error) {
 		return
 	}
 
-	err = WriteIn(user)
+	// 账号密码写入
+	err = dao.WriteIn(user)
 	if err != nil {
 		return
 	}
 
+	// 创建默认的信息，比如主文件夹
+	_, err = dao.CreateFolder(model.Folder{
+		Username:     user.Username,
+		FolderName:   mainFolder,
+		ParentFolder: -1,
+	})
 	res = true
 	return
 }
@@ -125,12 +134,4 @@ func CheckUsername(user model.User) (error, bool) {
 		return err, false
 	}
 	return err, false
-}
-
-func WriteIn(user model.User) error {
-	err := dao.WriteIn(user)
-	if err != nil {
-		return err
-	}
-	return err
 }

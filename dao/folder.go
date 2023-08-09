@@ -36,17 +36,6 @@ func CreateFolder(folder model.Folder) (uint, error) {
 		return 0, err
 	}
 
-	// mysql 更新
-	err = dB.Create(&model.UserResources{
-		FolderId:   uint(folder.ParentFolder),
-		ResourceId: 0,
-		Filename:   "folder",
-		Permission: "folder",
-	}).Error
-	if err != nil {
-		return 0, err
-	}
-
 	// 查询 folder id
 	var folderId uint
 	err = dB.Model(&model.Folder{}).Select("id").

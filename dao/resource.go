@@ -13,12 +13,11 @@ import (
 func CreateANewResource(resourceName string) error {
 	return dB.Create(&model.Resource{
 		ResourceName: resourceName,
-		ResourceNum:  0,
+		ResourceNum:  1,
 	}).Error
 }
 
 func ResourcesFile(ur model.UserResources) (bool, error) {
-	// mysql
 	err := dB.Create(&ur).Error
 	if err != nil {
 		return false, err
